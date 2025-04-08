@@ -15,6 +15,17 @@ import MentalHealthChatPage from "./pages/MentalHealthChatPage";
 import AboutPage from "./pages/AboutPage";
 import NotFound from "./pages/NotFound";
 
+// Patient Tab Pages
+import SymptomCheckerPage from "./pages/patient/SymptomCheckerPage";
+import MedicationsPage from "./pages/patient/MedicationsPage";
+import HealthRecordsPage from "./pages/patient/HealthRecordsPage";
+import InsurancePage from "./pages/patient/InsurancePage";
+
+// Doctor Tab Pages
+import PatientsPage from "./pages/doctor/PatientsPage";
+import SchedulePage from "./pages/doctor/SchedulePage";
+import AlertsPage from "./pages/doctor/AlertsPage";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -33,6 +44,18 @@ const App = () => (
           <Route path="/consultation/:id" element={<VideoConsultationPage />} />
           <Route path="/mental-health-chat" element={<MentalHealthChatPage />} />
           <Route path="/about" element={<AboutPage />} />
+          
+          {/* Patient Tab Pages */}
+          <Route path="/patient/symptoms" element={<SymptomCheckerPage />} />
+          <Route path="/patient/medications" element={<MedicationsPage />} />
+          <Route path="/patient/records" element={<HealthRecordsPage />} />
+          <Route path="/patient/insurance" element={<InsurancePage />} />
+          
+          {/* Doctor Tab Pages */}
+          <Route path="/doctor/patients" element={<PatientsPage />} />
+          <Route path="/doctor/schedule" element={<SchedulePage />} />
+          <Route path="/doctor/alerts" element={<AlertsPage />} />
+          
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

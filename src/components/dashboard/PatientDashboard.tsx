@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,16 @@ import { Calendar, Bell, Video, MessageSquare, AlertTriangle, FileText, PlusCirc
 import { useToast } from "@/hooks/use-toast";
 import SymptomChecker from "@/components/patient/SymptomChecker";
 import MedicationList from "@/components/patient/MedicationList";
+import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger, navigationMenuTriggerStyle } from "@/components/ui/navigation-menu";
+
+interface PatientDashboardProps {
+  alertStats: {
+    total: number;
+    emergency: number;
+    medication: number;
+    vitals: number;
+  } | null;
+}
 
 const upcomingAppointments = [
   {
@@ -29,7 +38,7 @@ const upcomingAppointments = [
   }
 ];
 
-const PatientDashboard = () => {
+const PatientDashboard = ({ alertStats }: PatientDashboardProps) => {
   const [emergencyLoading, setEmergencyLoading] = useState(false);
   const [showInsuranceForm, setShowInsuranceForm] = useState(false);
   const { toast } = useToast();
@@ -168,15 +177,37 @@ const PatientDashboard = () => {
         </Card>
       </div>
 
+      <NavigationMenu className="max-w-none w-full justify-start">
+        <NavigationMenuList className="w-full space-x-0">
+          <NavigationMenuItem className="flex-1">
+            <Link to="/patient/dashboard" className={navigationMenuTriggerStyle() + " justify-center w-full"}>
+              Overview
+            </Link>
+          </NavigationMenuItem>
+          <NavigationMenuItem className="flex-1">
+            <Link to="/patient/symptoms" className={navigationMenuTriggerStyle() + " justify-center w-full"}>
+              Symptom Checker
+            </Link>
+          </NavigationMenuItem>
+          <NavigationMenuItem className="flex-1">
+            <Link to="/patient/medications" className={navigationMenuTriggerStyle() + " justify-center w-full"}>
+              Medications
+            </Link>
+          </NavigationMenuItem>
+          <NavigationMenuItem className="flex-1">
+            <Link to="/patient/records" className={navigationMenuTriggerStyle() + " justify-center w-full"}>
+              Health Records
+            </Link>
+          </NavigationMenuItem>
+          <NavigationMenuItem className="flex-1">
+            <Link to="/patient/insurance" className={navigationMenuTriggerStyle() + " justify-center w-full"}>
+              Insurance
+            </Link>
+          </NavigationMenuItem>
+        </NavigationMenuList>
+      </NavigationMenu>
+
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="symptoms">Symptom Checker</TabsTrigger>
-          <TabsTrigger value="medications">Medications</TabsTrigger>
-          <TabsTrigger value="records">Health Records</TabsTrigger>
-          <TabsTrigger value="insurance">Insurance</TabsTrigger>
-        </TabsList>
-        
         <TabsContent value="overview" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
@@ -287,7 +318,7 @@ const PatientDashboard = () => {
               </CardContent>
               <CardFooter>
                 <Button asChild variant="ghost" size="sm" className="w-full">
-                  <Link to="/medications">
+                  <Link to="/patient/medications">
                     View Medications
                   </Link>
                 </Button>
@@ -307,7 +338,7 @@ const PatientDashboard = () => {
               </CardContent>
               <CardFooter>
                 <Button asChild variant="ghost" size="sm" className="w-full">
-                  <Link to="/records">
+                  <Link to="/patient/records">
                     View Records
                   </Link>
                 </Button>

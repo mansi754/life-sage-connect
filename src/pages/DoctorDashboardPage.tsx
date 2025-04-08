@@ -78,7 +78,13 @@ const DoctorDashboardPage = () => {
     <Layout>
       <div className="health-container py-8">
         <DoctorDashboard 
-          {...dashboardData} 
+          filteredPatients={dashboardData.filteredPatients}
+          alerts={dashboardData.alerts}
+          appointments={dashboardData.appointments}
+          searchQuery={dashboardData.searchQuery}
+          setSearchQuery={dashboardData.setSearchQuery}
+          handleAlertRespond={dashboardData.handleAlertRespond}
+          handleUpdateAppointment={dashboardData.handleUpdateAppointment}
           alertsCount={alertsCount || 0}
           emergencyAlerts={emergencyAlerts || 0}
         />

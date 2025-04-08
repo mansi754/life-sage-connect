@@ -1,10 +1,11 @@
+
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Users, Calendar, Search, Bell, Video, FileText, Clock, User, AlertTriangle } from "lucide-react";
 import { PatientRecord, Alert, Appointment } from "@/types/user";
+import { NavigationMenu, NavigationMenuList, NavigationMenuItem, navigationMenuTriggerStyle } from "@/components/ui/navigation-menu";
 
 interface DoctorDashboardProps {
   filteredPatients: PatientRecord[];
@@ -14,6 +15,8 @@ interface DoctorDashboardProps {
   setSearchQuery: (query: string) => void;
   handleAlertRespond: (alertId: string) => void;
   handleUpdateAppointment: (appointmentId: string, status: Appointment["status"]) => void;
+  alertsCount: number;
+  emergencyAlerts: number;
 }
 
 const DoctorDashboard = ({
@@ -23,7 +26,9 @@ const DoctorDashboard = ({
   searchQuery,
   setSearchQuery,
   handleAlertRespond,
-  handleUpdateAppointment
+  handleUpdateAppointment,
+  alertsCount,
+  emergencyAlerts
 }: DoctorDashboardProps) => {
 
   const getPatientStatusBadge = (patientRecord: PatientRecord) => {
@@ -134,236 +139,110 @@ const DoctorDashboard = ({
         </Card>
       </div>
 
-      <Tabs defaultValue="patients" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="patients">My Patients</TabsTrigger>
-          <TabsTrigger value="schedule">Schedule</TabsTrigger>
-          <TabsTrigger value="alerts">Alerts</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="patients" className="space-y-4">
-          <div className="flex items-center">
-            <div className="relative flex-grow max-w-md">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-health-neutral-500" />
-              <input
-                type="text"
-                placeholder="Search patients..."
-                className="w-full rounded-md border border-health-neutral-200 pl-9 py-2 outline-none focus:border-health-blue-500"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
-          
-          <Card>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-health-neutral-200">
-                      <th className="px-4 py-3 text-left text-sm font-medium text-health-neutral-500">Patient</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-health-neutral-500">Condition</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-health-neutral-500">Status</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-health-neutral-500">Next Appointment</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-health-neutral-500">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredPatients.map((patientRecord) => {
-                      const patient = patientRecord.patient;
-                      const matchingAppointment = appointments.find(a => a.patientId === patient.id);
-                      
-                      return (
-                        <tr key={patient.id} className="border-b border-health-neutral-200 last:border-0 hover:bg-health-neutral-50">
-                          <td className="px-4 py-3">
-                            <div className="flex items-center">
-                              <div className="h-8 w-8 rounded-full bg-health-neutral-200 flex items-center justify-center mr-3">
-                                <User className="h-4 w-4 text-health-neutral-500" />
-                              </div>
-                              <div>
-                                <div className="font-medium text-health-neutral-900 flex items-center">
-                                  {patient.firstName} {patient.lastName}
-                                  {alerts.some(a => a.patientId === patient.id) && (
-                                    <AlertTriangle className="ml-2 h-4 w-4 text-amber-500" />
-                                  )}
-                                </div>
-                                <div className="text-sm text-health-neutral-500">Patient #{patient.id}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-health-neutral-700">
-                            {patient.id === "1" ? "Hypertension" : 
-                             patient.id === "2" ? "Type 2 Diabetes" :
-                             patient.id === "3" ? "Arthritis" :
-                             patient.id === "4" ? "Asthma" :
-                             patient.id === "5" ? "Heart Disease" : "General Checkup"}
-                          </td>
-                          <td className="px-4 py-3">
-                            {getPatientStatusBadge(patientRecord)}
-                          </td>
-                          <td className="px-4 py-3 text-health-neutral-700">
-                            {matchingAppointment ? `${matchingAppointment.date} - ${matchingAppointment.time}` : "No upcoming appointment"}
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center space-x-2">
-                              <Button asChild variant="outline" size="sm">
-                                <Link to={`/patients/${patient.id}`}>
-                                  View
-                                </Link>
-                              </Button>
-                              <Button asChild size="sm" className="btn-primary">
-                                <Link to={`/consultation/${patient.id}`}>
-                                  <Video className="mr-1 h-3.5 w-3.5" /> Consult
-                                </Link>
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-between border-t border-health-neutral-200 py-3">
-              <span className="text-sm text-health-neutral-500">Showing {filteredPatients.length} of {filteredPatients.length} patients</span>
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/patients">
-                  View All Patients
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="schedule" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Upcoming Appointments</CardTitle>
-              <CardDescription>
-                Your scheduled consultations for the upcoming days.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {appointments.map((appointment) => {
-                  const patientRecord = filteredPatients.find(p => p.patient.id === appointment.patientId);
-                  
-                  return (
-                    <div key={appointment.id} className="flex justify-between items-start border-b border-health-neutral-100 pb-4 last:border-0 last:pb-0">
-                      <div className="flex items-start">
-                        <div className="h-10 w-10 rounded-full bg-health-blue-50 flex items-center justify-center mr-4 mt-1">
-                          <Clock className="h-5 w-5 text-health-blue-500" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-health-neutral-900">
-                            {patientRecord 
-                              ? `${patientRecord.patient.firstName} ${patientRecord.patient.lastName}` 
-                              : `Patient #${appointment.patientId}`
-                            }
-                          </h4>
-                          <p className="text-sm text-health-neutral-500">{appointment.type}</p>
-                          <p className="text-sm text-health-neutral-500">
-                            {appointment.date} at {appointment.time}
-                          </p>
-                          <p className="text-sm text-health-neutral-600 mt-1">{appointment.notes}</p>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Button asChild size="sm" className="btn-primary w-full">
-                          <Link to={`/consultation/${appointment.patientId}`}>
-                            <Video className="mr-2 h-4 w-4" /> Start
-                          </Link>
-                        </Button>
-                        <Button asChild variant="outline" size="sm" className="w-full">
-                          <Link to={`/patients/${appointment.patientId}`}>
-                            View Patient
-                          </Link>
-                        </Button>
-                      </div>
+      <NavigationMenu className="max-w-none w-full justify-start">
+        <NavigationMenuList className="w-full space-x-0">
+          <NavigationMenuItem className="flex-1">
+            <Link to="/doctor/dashboard" className={navigationMenuTriggerStyle() + " justify-center w-full"}>
+              Dashboard
+            </Link>
+          </NavigationMenuItem>
+          <NavigationMenuItem className="flex-1">
+            <Link to="/doctor/patients" className={navigationMenuTriggerStyle() + " justify-center w-full"}>
+              Patients
+            </Link>
+          </NavigationMenuItem>
+          <NavigationMenuItem className="flex-1">
+            <Link to="/doctor/schedule" className={navigationMenuTriggerStyle() + " justify-center w-full"}>
+              Schedule
+            </Link>
+          </NavigationMenuItem>
+          <NavigationMenuItem className="flex-1">
+            <Link to="/doctor/alerts" className={navigationMenuTriggerStyle() + " justify-center w-full"}>
+              Alerts
+              {alerts.length > 0 && (
+                <span className="ml-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {alerts.length}
+                </span>
+              )}
+            </Link>
+          </NavigationMenuItem>
+        </NavigationMenuList>
+      </NavigationMenu>
+
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+            <CardDescription>
+              A summary of your recent patient interactions and alerts.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-5">
+              {alerts.length > 0 && (
+                <div className="flex justify-between items-start pb-4 border-b border-health-neutral-100">
+                  <div className="flex items-start">
+                    <div className="h-10 w-10 rounded-full bg-red-50 flex items-center justify-center mr-4">
+                      <Bell className="h-5 w-5 text-red-500" />
                     </div>
-                  );
-                })}
-                
-                {appointments.length === 0 && (
-                  <div className="text-center py-8">
-                    <Calendar className="h-12 w-12 text-health-neutral-300 mx-auto mb-3" />
-                    <p className="text-health-neutral-500">No upcoming appointments scheduled.</p>
+                    <div>
+                      <h4 className="font-medium text-health-neutral-900">New Alerts</h4>
+                      <p className="text-sm text-health-neutral-600">
+                        You have {alerts.length} alerts that need your attention, including {emergencyAlerts} emergency alerts.
+                      </p>
+                    </div>
                   </div>
-                )}
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button asChild variant="outline" className="w-full">
-                <Link to="/calendar">
-                  <Calendar className="mr-2 h-4 w-4" /> View Full Calendar
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="alerts" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Bell className="mr-2 h-5 w-5 text-amber-500" />
-                Active Alerts
-              </CardTitle>
-              <CardDescription>
-                Patient alerts that need your attention.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {alerts.length > 0 ? (
-                <div className="space-y-4">
-                  {alerts.map((alert) => {
-                    const patientRecord = filteredPatients.find(p => p.patient.id === alert.patientId);
-                    
-                    return (
-                      <div key={alert.id} className={`p-4 rounded-lg ${
-                        alert.type === 'emergency' ? 'bg-red-50 border border-red-200' : 'bg-amber-50 border border-amber-200'
-                      }`}>
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className={`font-medium ${
-                              alert.type === 'emergency' ? 'text-red-700' : 'text-amber-700'
-                            }`}>
-                              {alert.type === 'emergency' ? 'Emergency Alert' : 'Vital Sign Alert'}
-                            </h4>
-                            <p className="font-medium mt-1">
-                              {patientRecord 
-                                ? `${patientRecord.patient.firstName} ${patientRecord.patient.lastName}` 
-                                : `Patient #${alert.patientId}`
-                              }
-                            </p>
-                            <p className="text-health-neutral-700 mt-1">{alert.message}</p>
-                            <p className="text-sm text-health-neutral-500 mt-2">
-                              {new Date(alert.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                          </div>
-                          <Button 
-                            size="sm" 
-                            className={alert.type === 'emergency' ? 'bg-red-500 hover:bg-red-600' : 'bg-amber-500 hover:bg-amber-600'}
-                            onClick={() => handleAlertRespond(alert.id)}
-                          >
-                            Respond
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Bell className="h-12 w-12 text-health-neutral-300 mx-auto mb-3" />
-                  <p className="text-health-neutral-500">No active alerts at this time.</p>
+                  <Button asChild size="sm">
+                    <Link to="/doctor/alerts">
+                      View Alerts
+                    </Link>
+                  </Button>
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              
+              {appointments.length > 0 && (
+                <div className="flex justify-between items-start pb-4 border-b border-health-neutral-100">
+                  <div className="flex items-start">
+                    <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center mr-4">
+                      <Calendar className="h-5 w-5 text-blue-500" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-health-neutral-900">Upcoming Appointments</h4>
+                      <p className="text-sm text-health-neutral-600">
+                        You have {appointments.length} appointments scheduled today.
+                      </p>
+                    </div>
+                  </div>
+                  <Button asChild size="sm" variant="outline">
+                    <Link to="/doctor/schedule">
+                      View Schedule
+                    </Link>
+                  </Button>
+                </div>
+              )}
+              
+              <div className="flex justify-between items-start">
+                <div className="flex items-start">
+                  <div className="h-10 w-10 rounded-full bg-green-50 flex items-center justify-center mr-4">
+                    <Users className="h-5 w-5 text-green-500" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-health-neutral-900">Patient Overview</h4>
+                    <p className="text-sm text-health-neutral-600">
+                      You are currently managing {filteredPatients.length} patients.
+                    </p>
+                  </div>
+                </div>
+                <Button asChild size="sm" variant="outline">
+                  <Link to="/doctor/patients">
+                    View Patients
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
