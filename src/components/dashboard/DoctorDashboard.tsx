@@ -1,120 +1,79 @@
-
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Users, Calendar, Search, Bell, Video, FileText, Clock, User, AlertTriangle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { PatientRecord, Alert, Appointment } from "@/types/user";
 
-const patients = [
-  {
-    id: 1,
-    name: "John Smith",
-    age: 45,
-    nextAppointment: "Apr 10, 2025 - 10:00 AM",
-    condition: "Hypertension",
-    status: "Stable",
-    alert: false
-  },
-  {
-    id: 2,
-    name: "Emily Johnson",
-    age: 32,
-    nextAppointment: "Apr 15, 2025 - 2:30 PM",
-    condition: "Type 2 Diabetes",
-    status: "Needs Review",
-    alert: true
-  },
-  {
-    id: 3,
-    name: "Michael Brown",
-    age: 58,
-    nextAppointment: "Apr 18, 2025 - 11:15 AM",
-    condition: "Arthritis",
-    status: "Improving",
-    alert: false
-  },
-  {
-    id: 4,
-    name: "Sarah Williams",
-    age: 29,
-    nextAppointment: "Apr 20, 2025 - 9:45 AM",
-    condition: "Asthma",
-    status: "Stable",
-    alert: false
-  },
-  {
-    id: 5,
-    name: "Robert Garcia",
-    age: 62,
-    nextAppointment: "Apr 22, 2025 - 3:00 PM",
-    condition: "Heart Disease",
-    status: "Needs Review",
-    alert: true
-  }
-];
+interface DoctorDashboardProps {
+  filteredPatients: PatientRecord[];
+  alerts: Alert[];
+  appointments: Appointment[];
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  handleAlertRespond: (alertId: string) => void;
+  handleUpdateAppointment: (appointmentId: string, status: Appointment["status"]) => void;
+}
 
-const upcomingAppointments = [
-  {
-    id: 1,
-    patient: "John Smith",
-    time: "10:00 AM",
-    date: "Apr 10, 2025",
-    type: "Video Consultation",
-    notes: "Follow-up on blood pressure medication"
-  },
-  {
-    id: 2,
-    patient: "Emily Johnson",
-    time: "2:30 PM",
-    date: "Apr 15, 2025",
-    type: "Video Consultation",
-    notes: "Review latest blood sugar readings"
-  },
-  {
-    id: 3,
-    patient: "Michael Brown",
-    time: "11:15 AM",
-    date: "Apr 18, 2025",
-    type: "Video Consultation",
-    notes: "Discuss physical therapy progress"
-  }
-];
+const DoctorDashboard = ({
+  filteredPatients,
+  alerts,
+  appointments,
+  searchQuery,
+  setSearchQuery,
+  handleAlertRespond,
+  handleUpdateAppointment
+}: DoctorDashboardProps) => {
 
-const alerts = [
-  {
-    id: 1,
-    type: "emergency",
-    patient: "Robert Garcia",
-    message: "Reported chest pain and shortness of breath",
-    time: "15 minutes ago"
-  },
-  {
-    id: 2,
-    type: "vitals",
-    patient: "Emily Johnson",
-    message: "Blood sugar reading above threshold (250 mg/dL)",
-    time: "2 hours ago"
-  }
-];
+  const getPatientStatusBadge = (patientRecord: PatientRecord) => {
+    if (!patientRecord.vitals) {
+      return (
+        <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
+          Unknown
+        </Badge>
+      );
+    }
 
-const DoctorDashboard = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const { toast } = useToast();
+    const { heartRate, bloodPressure, bloodSugar, oxygenLevel, temperature } = patientRecord.vitals;
+    const [systolic, diastolic] = bloodPressure.split('/').map(Number);
 
-  const filteredPatients = patients.filter((patient) =>
-    patient.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+    if (
+      heartRate > 100 || heartRate < 50 ||
+      systolic > 140 || diastolic > 90 ||
+      bloodSugar > 180 || bloodSugar < 70 ||
+      oxygenLevel < 92 ||
+      temperature > 38
+    ) {
+      return (
+        <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200">
+          Needs Review
+        </Badge>
+      );
+    }
 
-  const handleAlertRespond = (alertId: number) => {
-    toast({
-      title: "Alert Response",
-      description: "You've marked this alert as being attended to.",
-      variant: "default",
-    });
-    // In a real app, we would update the alerts list here
+    if (
+      (heartRate > 90 && heartRate <= 100) ||
+      (heartRate >= 50 && heartRate < 60) ||
+      (systolic > 130 && systolic <= 140) ||
+      (diastolic > 85 && diastolic <= 90) ||
+      (bloodSugar > 140 && bloodSugar <= 180) ||
+      (bloodSugar >= 70 && bloodSugar < 80) ||
+      (oxygenLevel >= 92 && oxygenLevel < 95) ||
+      (temperature > 37.5 && temperature <= 38)
+    ) {
+      return (
+        <Badge variant="default" className="bg-blue-50 text-blue-700 border-blue-200">
+          Improving
+        </Badge>
+      );
+    }
+
+    return (
+      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+        Stable
+      </Badge>
+    );
   };
 
   return (
@@ -122,7 +81,7 @@ const DoctorDashboard = () => {
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Doctor Dashboard</h1>
-          <p className="text-health-neutral-600">Welcome back, Dr. Williams. You have 2 emergency alerts.</p>
+          <p className="text-health-neutral-600">Welcome back, Dr. Williams. You have {alerts.length} emergency alerts.</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" className="flex items-center">
@@ -142,7 +101,7 @@ const DoctorDashboard = () => {
           <CardContent>
             <div className="flex items-center">
               <Users className="h-5 w-5 text-health-blue-500 mr-2" />
-              <div className="text-2xl font-bold">128</div>
+              <div className="text-2xl font-bold">{filteredPatients.length}</div>
             </div>
             <p className="text-xs text-health-neutral-500 mt-1">+5 this month</p>
           </CardContent>
@@ -155,7 +114,7 @@ const DoctorDashboard = () => {
           <CardContent>
             <div className="flex items-center">
               <Calendar className="h-5 w-5 text-health-green-500 mr-2" />
-              <div className="text-2xl font-bold">8</div>
+              <div className="text-2xl font-bold">{appointments.length}</div>
             </div>
             <p className="text-xs text-health-neutral-500 mt-1">Next at 10:00 AM</p>
           </CardContent>
@@ -168,7 +127,7 @@ const DoctorDashboard = () => {
           <CardContent>
             <div className="flex items-center">
               <FileText className="h-5 w-5 text-amber-500 mr-2" />
-              <div className="text-2xl font-bold">15</div>
+              <div className="text-2xl font-bold">{filteredPatients.filter(p => getPatientStatusBadge(p).props.children === "Needs Review").length}</div>
             </div>
             <p className="text-xs text-health-neutral-500 mt-1">+3 since yesterday</p>
           </CardContent>
@@ -210,61 +169,64 @@ const DoctorDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredPatients.map((patient) => (
-                      <tr key={patient.id} className="border-b border-health-neutral-200 last:border-0 hover:bg-health-neutral-50">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center">
-                            <div className="h-8 w-8 rounded-full bg-health-neutral-200 flex items-center justify-center mr-3">
-                              <User className="h-4 w-4 text-health-neutral-500" />
-                            </div>
-                            <div>
-                              <div className="font-medium text-health-neutral-900 flex items-center">
-                                {patient.name}
-                                {patient.alert && (
-                                  <AlertTriangle className="ml-2 h-4 w-4 text-amber-500" />
-                                )}
+                    {filteredPatients.map((patientRecord) => {
+                      const patient = patientRecord.patient;
+                      const matchingAppointment = appointments.find(a => a.patientId === patient.id);
+                      
+                      return (
+                        <tr key={patient.id} className="border-b border-health-neutral-200 last:border-0 hover:bg-health-neutral-50">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center">
+                              <div className="h-8 w-8 rounded-full bg-health-neutral-200 flex items-center justify-center mr-3">
+                                <User className="h-4 w-4 text-health-neutral-500" />
                               </div>
-                              <div className="text-sm text-health-neutral-500">{patient.age} years</div>
+                              <div>
+                                <div className="font-medium text-health-neutral-900 flex items-center">
+                                  {patient.firstName} {patient.lastName}
+                                  {alerts.some(a => a.patientId === patient.id) && (
+                                    <AlertTriangle className="ml-2 h-4 w-4 text-amber-500" />
+                                  )}
+                                </div>
+                                <div className="text-sm text-health-neutral-500">Patient #{patient.id}</div>
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-health-neutral-700">{patient.condition}</td>
-                        <td className="px-4 py-3">
-                          <Badge variant={
-                            patient.status === "Stable" ? "outline" : 
-                            patient.status === "Improving" ? "default" :
-                            "secondary"
-                          } className={
-                            patient.status === "Stable" ? "bg-green-50 text-green-700 border-green-200" : 
-                            patient.status === "Improving" ? "bg-blue-50 text-blue-700 border-blue-200" :
-                            "bg-amber-50 text-amber-700 border-amber-200"
-                          }>
-                            {patient.status}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-health-neutral-700">{patient.nextAppointment}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center space-x-2">
-                            <Button asChild variant="outline" size="sm">
-                              <Link to={`/patients/${patient.id}`}>
-                                View
-                              </Link>
-                            </Button>
-                            <Button asChild size="sm" className="btn-primary">
-                              <Link to={`/consultation/${patient.id}`}>
-                                <Video className="mr-1 h-3.5 w-3.5" /> Consult
-                              </Link>
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="px-4 py-3 text-health-neutral-700">
+                            {patient.id === "1" ? "Hypertension" : 
+                             patient.id === "2" ? "Type 2 Diabetes" :
+                             patient.id === "3" ? "Arthritis" :
+                             patient.id === "4" ? "Asthma" :
+                             patient.id === "5" ? "Heart Disease" : "General Checkup"}
+                          </td>
+                          <td className="px-4 py-3">
+                            {getPatientStatusBadge(patientRecord)}
+                          </td>
+                          <td className="px-4 py-3 text-health-neutral-700">
+                            {matchingAppointment ? `${matchingAppointment.date} - ${matchingAppointment.time}` : "No upcoming appointment"}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center space-x-2">
+                              <Button asChild variant="outline" size="sm">
+                                <Link to={`/patients/${patient.id}`}>
+                                  View
+                                </Link>
+                              </Button>
+                              <Button asChild size="sm" className="btn-primary">
+                                <Link to={`/consultation/${patient.id}`}>
+                                  <Video className="mr-1 h-3.5 w-3.5" /> Consult
+                                </Link>
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             </CardContent>
             <CardFooter className="flex justify-between border-t border-health-neutral-200 py-3">
-              <span className="text-sm text-health-neutral-500">Showing {filteredPatients.length} of {patients.length} patients</span>
+              <span className="text-sm text-health-neutral-500">Showing {filteredPatients.length} of {filteredPatients.length} patients</span>
               <Button asChild variant="ghost" size="sm">
                 <Link to="/patients">
                   View All Patients
@@ -284,35 +246,51 @@ const DoctorDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {upcomingAppointments.map((appointment) => (
-                  <div key={appointment.id} className="flex justify-between items-start border-b border-health-neutral-100 pb-4 last:border-0 last:pb-0">
-                    <div className="flex items-start">
-                      <div className="h-10 w-10 rounded-full bg-health-blue-50 flex items-center justify-center mr-4 mt-1">
-                        <Clock className="h-5 w-5 text-health-blue-500" />
+                {appointments.map((appointment) => {
+                  const patientRecord = filteredPatients.find(p => p.patient.id === appointment.patientId);
+                  
+                  return (
+                    <div key={appointment.id} className="flex justify-between items-start border-b border-health-neutral-100 pb-4 last:border-0 last:pb-0">
+                      <div className="flex items-start">
+                        <div className="h-10 w-10 rounded-full bg-health-blue-50 flex items-center justify-center mr-4 mt-1">
+                          <Clock className="h-5 w-5 text-health-blue-500" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-health-neutral-900">
+                            {patientRecord 
+                              ? `${patientRecord.patient.firstName} ${patientRecord.patient.lastName}` 
+                              : `Patient #${appointment.patientId}`
+                            }
+                          </h4>
+                          <p className="text-sm text-health-neutral-500">{appointment.type}</p>
+                          <p className="text-sm text-health-neutral-500">
+                            {appointment.date} at {appointment.time}
+                          </p>
+                          <p className="text-sm text-health-neutral-600 mt-1">{appointment.notes}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-medium text-health-neutral-900">{appointment.patient}</h4>
-                        <p className="text-sm text-health-neutral-500">{appointment.type}</p>
-                        <p className="text-sm text-health-neutral-500">
-                          {appointment.date} at {appointment.time}
-                        </p>
-                        <p className="text-sm text-health-neutral-600 mt-1">{appointment.notes}</p>
+                      <div className="space-y-2">
+                        <Button asChild size="sm" className="btn-primary w-full">
+                          <Link to={`/consultation/${appointment.patientId}`}>
+                            <Video className="mr-2 h-4 w-4" /> Start
+                          </Link>
+                        </Button>
+                        <Button asChild variant="outline" size="sm" className="w-full">
+                          <Link to={`/patients/${appointment.patientId}`}>
+                            View Patient
+                          </Link>
+                        </Button>
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Button asChild size="sm" className="btn-primary w-full">
-                        <Link to={`/consultation/${appointment.id}`}>
-                          <Video className="mr-2 h-4 w-4" /> Start
-                        </Link>
-                      </Button>
-                      <Button asChild variant="outline" size="sm" className="w-full">
-                        <Link to={`/patients/${appointment.id}`}>
-                          View Patient
-                        </Link>
-                      </Button>
-                    </div>
+                  );
+                })}
+                
+                {appointments.length === 0 && (
+                  <div className="text-center py-8">
+                    <Calendar className="h-12 w-12 text-health-neutral-300 mx-auto mb-3" />
+                    <p className="text-health-neutral-500">No upcoming appointments scheduled.</p>
                   </div>
-                ))}
+                )}
               </div>
             </CardContent>
             <CardFooter>
@@ -339,31 +317,42 @@ const DoctorDashboard = () => {
             <CardContent>
               {alerts.length > 0 ? (
                 <div className="space-y-4">
-                  {alerts.map((alert) => (
-                    <div key={alert.id} className={`p-4 rounded-lg ${
-                      alert.type === 'emergency' ? 'bg-red-50 border border-red-200' : 'bg-amber-50 border border-amber-200'
-                    }`}>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className={`font-medium ${
-                            alert.type === 'emergency' ? 'text-red-700' : 'text-amber-700'
-                          }`}>
-                            {alert.type === 'emergency' ? 'Emergency Alert' : 'Vital Sign Alert'}
-                          </h4>
-                          <p className="font-medium mt-1">{alert.patient}</p>
-                          <p className="text-health-neutral-700 mt-1">{alert.message}</p>
-                          <p className="text-sm text-health-neutral-500 mt-2">{alert.time}</p>
+                  {alerts.map((alert) => {
+                    const patientRecord = filteredPatients.find(p => p.patient.id === alert.patientId);
+                    
+                    return (
+                      <div key={alert.id} className={`p-4 rounded-lg ${
+                        alert.type === 'emergency' ? 'bg-red-50 border border-red-200' : 'bg-amber-50 border border-amber-200'
+                      }`}>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className={`font-medium ${
+                              alert.type === 'emergency' ? 'text-red-700' : 'text-amber-700'
+                            }`}>
+                              {alert.type === 'emergency' ? 'Emergency Alert' : 'Vital Sign Alert'}
+                            </h4>
+                            <p className="font-medium mt-1">
+                              {patientRecord 
+                                ? `${patientRecord.patient.firstName} ${patientRecord.patient.lastName}` 
+                                : `Patient #${alert.patientId}`
+                              }
+                            </p>
+                            <p className="text-health-neutral-700 mt-1">{alert.message}</p>
+                            <p className="text-sm text-health-neutral-500 mt-2">
+                              {new Date(alert.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                          <Button 
+                            size="sm" 
+                            className={alert.type === 'emergency' ? 'bg-red-500 hover:bg-red-600' : 'bg-amber-500 hover:bg-amber-600'}
+                            onClick={() => handleAlertRespond(alert.id)}
+                          >
+                            Respond
+                          </Button>
                         </div>
-                        <Button 
-                          size="sm" 
-                          className={alert.type === 'emergency' ? 'bg-red-500 hover:bg-red-600' : 'bg-amber-500 hover:bg-amber-600'}
-                          onClick={() => handleAlertRespond(alert.id)}
-                        >
-                          Respond
-                        </Button>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-8">

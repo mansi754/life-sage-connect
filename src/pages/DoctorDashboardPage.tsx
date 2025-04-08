@@ -4,10 +4,12 @@ import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import DoctorDashboard from "@/components/dashboard/DoctorDashboard";
 import { getCurrentUser } from "@/services/authService";
+import { useDoctorDashboard } from "@/hooks/useDoctorDashboard";
 
 const DoctorDashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const dashboardData = useDoctorDashboard();
 
   useEffect(() => {
     const checkAuth = () => {
@@ -29,7 +31,7 @@ const DoctorDashboardPage = () => {
     checkAuth();
   }, [navigate]);
 
-  if (loading) {
+  if (loading || dashboardData.loading) {
     return (
       <Layout>
         <div className="health-container py-8">
@@ -44,7 +46,7 @@ const DoctorDashboardPage = () => {
   return (
     <Layout>
       <div className="health-container py-8">
-        <DoctorDashboard />
+        <DoctorDashboard {...dashboardData} />
       </div>
     </Layout>
   );
