@@ -87,7 +87,7 @@ const SchedulePage = () => {
                           size="sm" 
                           variant="outline" 
                           className="text-amber-600 border-amber-200 hover:bg-amber-50 flex-1"
-                          onClick={() => handleUpdateAppointment(appointment.id, "Rescheduled")}
+                          onClick={() => handleUpdateAppointment(appointment.id, "Scheduled")}
                         >
                           Reschedule
                         </Button>
