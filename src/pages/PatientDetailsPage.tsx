@@ -1,55 +1,39 @@
 
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
-import { getCurrentUser } from "@/services/authService";
+import PatientInfo from "@/components/patient/PatientInfo";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { User, PatientVitals, Appointment, Medication } from "@/types/user";
 import { getPatientById } from "@/services/patientService";
 import { getLatestVitals, simulateRealtimeVitals } from "@/services/vitalService";
-import { User, PatientVitals } from "@/types/user";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Heart, Thermometer, Droplet, Activity, Lungs, User as UserIcon, FileText, Video, CalendarDays } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Activity, Calendar, FileText, Heart, Clock, Pill } from "lucide-react";
 
 const PatientDetailsPage = () => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
+  const { patientId } = useParams<{ patientId: string }>();
   const [patient, setPatient] = useState<User | null>(null);
   const [vitals, setVitals] = useState<PatientVitals | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
+  const [loading, setLoading] = useState(true);
+  
   useEffect(() => {
-    const checkAuth = () => {
-      const user = getCurrentUser();
-      
-      if (!user) {
-        navigate("/login");
-        return false;
-      }
-      
-      if (user.role !== "doctor") {
-        navigate("/patient/dashboard");
-        return false;
-      }
-      
-      return true;
-    };
-    
     const fetchPatientData = async () => {
-      if (!id || !checkAuth()) return;
-      
       try {
-        const patientData = await getPatientById(id);
-        setPatient(patientData);
-        
-        const vitalsData = await getLatestVitals(id);
-        setVitals(vitalsData);
-      } catch (err) {
-        console.error("Error fetching patient data:", err);
-        setError("Failed to load patient data. Please try again later.");
+        setLoading(true);
+        if (patientId) {
+          const patientData = await getPatientById(patientId);
+          setPatient(patientData);
+          
+          try {
+            const vitalsData = await getLatestVitals(patientId);
+            setVitals(vitalsData);
+          } catch (error) {
+            console.error("Error fetching vitals:", error);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching patient:", error);
       } finally {
         setLoading(false);
       }
@@ -57,19 +41,21 @@ const PatientDetailsPage = () => {
     
     fetchPatientData();
     
-    // Set up real-time vitals simulation
-    let cleanup: (() => void) | null = null;
+    // Setup realtime vitals simulation if needed
+    let cleanup: (() => void) | undefined;
     
-    if (id) {
-      cleanup = simulateRealtimeVitals(id, (newVitals) => {
-        setVitals(newVitals);
+    if (patientId) {
+      cleanup = simulateRealtimeVitals(patientId, (updatedVitals) => {
+        setVitals(updatedVitals);
       });
     }
     
     return () => {
-      if (cleanup) cleanup();
+      if (cleanup) {
+        cleanup();
+      }
     };
-  }, [id, navigate]);
+  }, [patientId]);
 
   if (loading) {
     return (
@@ -83,15 +69,15 @@ const PatientDetailsPage = () => {
     );
   }
 
-  if (error || !patient) {
+  if (!patient) {
     return (
       <Layout>
         <div className="health-container py-8">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <h2 className="text-red-700 text-xl font-semibold mb-2">Error</h2>
-            <p className="text-red-600">{error || "Patient not found"}</p>
-            <Button asChild className="mt-4" variant="outline">
-              <Link to="/doctor/dashboard">Return to Dashboard</Link>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Patient Not Found</h1>
+            <p className="mb-6">The patient you are looking for does not exist or you don't have permission to view their details.</p>
+            <Button asChild>
+              <Link to="/doctor/dashboard">Back to Dashboard</Link>
             </Button>
           </div>
         </div>
@@ -99,313 +85,354 @@ const PatientDetailsPage = () => {
     );
   }
 
-  const getVitalStatus = (type: string, value: number | string): { color: string; status: string } => {
-    switch (type) {
-      case "heartRate": {
-        const rate = value as number;
-        if (rate < 60) return { color: "text-amber-500", status: "Low" };
-        if (rate > 100) return { color: "text-red-500", status: "High" };
-        return { color: "text-green-500", status: "Normal" };
-      }
-      case "bloodPressure": {
-        const [systolic, diastolic] = (value as string).split('/').map(Number);
-        if (systolic > 140 || diastolic > 90) return { color: "text-red-500", status: "High" };
-        if (systolic < 90 || diastolic < 60) return { color: "text-amber-500", status: "Low" };
-        return { color: "text-green-500", status: "Normal" };
-      }
-      case "bloodSugar": {
-        const sugar = value as number;
-        if (sugar > 140) return { color: "text-red-500", status: "High" };
-        if (sugar < 70) return { color: "text-amber-500", status: "Low" };
-        return { color: "text-green-500", status: "Normal" };
-      }
-      case "oxygenLevel": {
-        const oxygen = value as number;
-        if (oxygen < 92) return { color: "text-red-500", status: "Low" };
-        if (oxygen < 95) return { color: "text-amber-500", status: "Borderline" };
-        return { color: "text-green-500", status: "Normal" };
-      }
-      case "temperature": {
-        const temp = value as number;
-        if (temp > 38) return { color: "text-red-500", status: "High" };
-        if (temp < 36) return { color: "text-amber-500", status: "Low" };
-        return { color: "text-green-500", status: "Normal" };
-      }
-      default:
-        return { color: "text-gray-500", status: "Unknown" };
-    }
-  };
-
   return (
     <Layout>
       <div className="health-container py-8">
-        <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="flex items-center">
-            <Button 
-              variant="outline" 
-              className="mr-4" 
-              onClick={() => navigate("/doctor/dashboard")}
-            >
-              &larr; Back
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">{patient.firstName} {patient.lastName}</h1>
-              <p className="text-health-neutral-600">Patient ID: {patient.id}</p>
-            </div>
+        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">{patient.firstName} {patient.lastName}</h1>
+            <p className="text-health-neutral-600">Patient ID: {patient.id}</p>
           </div>
-          <div className="flex space-x-3">
+          <div className="flex items-center gap-2">
             <Button asChild variant="outline">
-              <Link to={`/patient/${patient.id}/history`}>
-                <FileText className="mr-2 h-4 w-4" /> Medical History
+              <Link to="/doctor/dashboard">
+                Back to Dashboard
               </Link>
             </Button>
-            <Button asChild variant="outline">
-              <Link to={`/calendar?patient=${patient.id}`}>
-                <CalendarDays className="mr-2 h-4 w-4" /> Schedule
-              </Link>
-            </Button>
-            <Button asChild className="btn-primary">
+            <Button asChild>
               <Link to={`/consultation/${patient.id}`}>
-                <Video className="mr-2 h-4 w-4" /> Start Consultation
+                Start Consultation
               </Link>
             </Button>
           </div>
         </div>
-
-        <Tabs defaultValue="vitals" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="vitals">Real-time Vitals</TabsTrigger>
-            <TabsTrigger value="info">Patient Info</TabsTrigger>
-            <TabsTrigger value="notes">Medical Notes</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="vitals" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {vitals && (
-                <>
-                  {/* Heart Rate Card */}
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-2 space-y-6">
+            <Tabs defaultValue="overview">
+              <TabsList className="grid grid-cols-3">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="records">Records</TabsTrigger>
+                <TabsTrigger value="appointments">Appointments</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="overview" className="space-y-6 mt-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Activity className="mr-2 h-5 w-5 text-health-blue-500" />
+                      Vital Signs
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {vitals ? (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <div className="border rounded-lg p-3">
+                          <div className="flex items-center space-x-3">
+                            <Heart className="h-5 w-5 text-red-500" />
+                            <div>
+                              <p className="text-sm text-health-neutral-500">Heart Rate</p>
+                              <p className="font-medium">{vitals.heartRate} bpm</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="border rounded-lg p-3">
+                          <div className="flex items-center space-x-3">
+                            <Activity className="h-5 w-5 text-blue-500" />
+                            <div>
+                              <p className="text-sm text-health-neutral-500">Blood Pressure</p>
+                              <p className="font-medium">{vitals.bloodPressure} mmHg</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="border rounded-lg p-3">
+                          <div className="flex items-center space-x-3">
+                            <Activity className="h-5 w-5 text-green-500" />
+                            <div>
+                              <p className="text-sm text-health-neutral-500">Blood Sugar</p>
+                              <p className="font-medium">{vitals.bloodSugar} mg/dL</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="border rounded-lg p-3">
+                          <div className="flex items-center space-x-3">
+                            <Activity className="h-5 w-5 text-teal-500" />
+                            <div>
+                              <p className="text-sm text-health-neutral-500">Oxygen Level</p>
+                              <p className="font-medium">{vitals.oxygenLevel}%</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="border rounded-lg p-3">
+                          <div className="flex items-center space-x-3">
+                            <Activity className="h-5 w-5 text-orange-500" />
+                            <div>
+                              <p className="text-sm text-health-neutral-500">Temperature</p>
+                              <p className="font-medium">{vitals.temperature.toFixed(1)}°C</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="border rounded-lg p-3">
+                          <div className="flex items-center space-x-3">
+                            <Clock className="h-5 w-5 text-health-neutral-500" />
+                            <div>
+                              <p className="text-sm text-health-neutral-500">Last Updated</p>
+                              <p className="font-medium">
+                                {new Date(vitals.timestamp).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-health-neutral-500">No vitals data available for this patient.</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base font-medium flex items-center">
-                        <Heart className="h-5 w-5 text-red-500 mr-2" /> Heart Rate
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <Pill className="mr-2 h-5 w-5 text-purple-500" />
+                        Current Medications
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="flex items-baseline">
-                        <span className="text-3xl font-bold">{Math.round(vitals.heartRate)}</span>
-                        <span className="ml-2 text-health-neutral-500">bpm</span>
-                      </div>
-                      <div className="mt-2 flex items-center">
-                        <span className={`text-sm font-medium ${getVitalStatus('heartRate', vitals.heartRate).color}`}>
-                          {getVitalStatus('heartRate', vitals.heartRate).status}
-                        </span>
-                        <span className="ml-2 text-xs text-health-neutral-500">
-                          (Normal range: 60-100 bpm)
-                        </span>
-                      </div>
+                      <ul className="space-y-3">
+                        <li className="flex justify-between items-center p-2 hover:bg-health-neutral-50 rounded">
+                          <div>
+                            <p className="font-medium">Lisinopril</p>
+                            <p className="text-sm text-health-neutral-500">10mg - Once daily</p>
+                          </div>
+                          <Button variant="outline" size="sm">View</Button>
+                        </li>
+                        <li className="flex justify-between items-center p-2 hover:bg-health-neutral-50 rounded">
+                          <div>
+                            <p className="font-medium">Metformin</p>
+                            <p className="text-sm text-health-neutral-500">500mg - Twice daily</p>
+                          </div>
+                          <Button variant="outline" size="sm">View</Button>
+                        </li>
+                        <li className="flex justify-between items-center p-2 hover:bg-health-neutral-50 rounded">
+                          <div>
+                            <p className="font-medium">Atorvastatin</p>
+                            <p className="text-sm text-health-neutral-500">20mg - Once daily</p>
+                          </div>
+                          <Button variant="outline" size="sm">View</Button>
+                        </li>
+                      </ul>
                     </CardContent>
                   </Card>
-
-                  {/* Blood Pressure Card */}
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base font-medium flex items-center">
-                        <Activity className="h-5 w-5 text-blue-500 mr-2" /> Blood Pressure
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-baseline">
-                        <span className="text-3xl font-bold">{vitals.bloodPressure}</span>
-                        <span className="ml-2 text-health-neutral-500">mmHg</span>
-                      </div>
-                      <div className="mt-2 flex items-center">
-                        <span className={`text-sm font-medium ${getVitalStatus('bloodPressure', vitals.bloodPressure).color}`}>
-                          {getVitalStatus('bloodPressure', vitals.bloodPressure).status}
-                        </span>
-                        <span className="ml-2 text-xs text-health-neutral-500">
-                          (Normal range: 90/60 - 120/80 mmHg)
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Blood Sugar Card */}
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base font-medium flex items-center">
-                        <Droplet className="h-5 w-5 text-purple-500 mr-2" /> Blood Sugar
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-baseline">
-                        <span className="text-3xl font-bold">{Math.round(vitals.bloodSugar)}</span>
-                        <span className="ml-2 text-health-neutral-500">mg/dL</span>
-                      </div>
-                      <div className="mt-2 flex items-center">
-                        <span className={`text-sm font-medium ${getVitalStatus('bloodSugar', vitals.bloodSugar).color}`}>
-                          {getVitalStatus('bloodSugar', vitals.bloodSugar).status}
-                        </span>
-                        <span className="ml-2 text-xs text-health-neutral-500">
-                          (Normal range: 70-140 mg/dL)
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Oxygen Level Card */}
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base font-medium flex items-center">
-                        <Lungs className="h-5 w-5 text-cyan-500 mr-2" /> Oxygen Level
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-baseline">
-                        <span className="text-3xl font-bold">{Math.round(vitals.oxygenLevel)}</span>
-                        <span className="ml-2 text-health-neutral-500">%</span>
-                      </div>
-                      <div className="mt-2 flex items-center">
-                        <span className={`text-sm font-medium ${getVitalStatus('oxygenLevel', vitals.oxygenLevel).color}`}>
-                          {getVitalStatus('oxygenLevel', vitals.oxygenLevel).status}
-                        </span>
-                        <span className="ml-2 text-xs text-health-neutral-500">
-                          (Normal range: 95-100%)
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Temperature Card */}
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base font-medium flex items-center">
-                        <Thermometer className="h-5 w-5 text-orange-500 mr-2" /> Temperature
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-baseline">
-                        <span className="text-3xl font-bold">{vitals.temperature.toFixed(1)}</span>
-                        <span className="ml-2 text-health-neutral-500">°C</span>
-                      </div>
-                      <div className="mt-2 flex items-center">
-                        <span className={`text-sm font-medium ${getVitalStatus('temperature', vitals.temperature).color}`}>
-                          {getVitalStatus('temperature', vitals.temperature).status}
-                        </span>
-                        <span className="ml-2 text-xs text-health-neutral-500">
-                          (Normal range: 36.1-37.2°C)
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </>
-              )}
-
-              {!vitals && (
-                <div className="col-span-full bg-health-neutral-50 rounded-lg p-8 text-center">
-                  <Activity className="h-12 w-12 text-health-neutral-300 mx-auto mb-3" />
-                  <p className="text-health-neutral-500">No vital data available for this patient.</p>
-                </div>
-              )}
-            </div>
-
-            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-blue-700 text-sm">
-              <p className="font-medium">Note: Vital readings are being updated in real-time.</p>
-              <p className="mt-1">The displayed values are simulated for demonstration purposes.</p>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="info">
-            <Card>
-              <CardHeader>
-                <CardTitle>Patient Information</CardTitle>
-                <CardDescription>
-                  Basic information about {patient.firstName} {patient.lastName}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center p-4 bg-health-neutral-50 rounded-lg">
-                  <div className="h-16 w-16 rounded-full bg-health-neutral-200 flex items-center justify-center mr-4">
-                    <UserIcon className="h-8 w-8 text-health-neutral-500" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-medium">{patient.firstName} {patient.lastName}</h3>
-                    <p className="text-health-neutral-600">{patient.email}</p>
-                    <div className="mt-1">
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                        Patient
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-4 border border-health-neutral-200 rounded-lg">
-                    <h4 className="text-sm font-medium text-health-neutral-500 mb-1">Date of Birth</h4>
-                    <p>January 15, 1980</p>
-                  </div>
-                  <div className="p-4 border border-health-neutral-200 rounded-lg">
-                    <h4 className="text-sm font-medium text-health-neutral-500 mb-1">Gender</h4>
-                    <p>Male</p>
-                  </div>
-                  <div className="p-4 border border-health-neutral-200 rounded-lg">
-                    <h4 className="text-sm font-medium text-health-neutral-500 mb-1">Phone</h4>
-                    <p>(555) 123-4567</p>
-                  </div>
-                  <div className="p-4 border border-health-neutral-200 rounded-lg">
-                    <h4 className="text-sm font-medium text-health-neutral-500 mb-1">Address</h4>
-                    <p>123 Main St, Anytown, USA</p>
-                  </div>
-                  <div className="p-4 border border-health-neutral-200 rounded-lg">
-                    <h4 className="text-sm font-medium text-health-neutral-500 mb-1">Emergency Contact</h4>
-                    <p>Jane Smith (555) 987-6543</p>
-                  </div>
-                  <div className="p-4 border border-health-neutral-200 rounded-lg">
-                    <h4 className="text-sm font-medium text-health-neutral-500 mb-1">Insurance</h4>
-                    <p>HealthCare Plus (#12345678)</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="notes">
-            <Card>
-              <CardHeader>
-                <CardTitle>Medical Notes</CardTitle>
-                <CardDescription>
-                  Clinical notes and observations
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="p-4 border border-health-neutral-200 rounded-lg">
-                    <div className="flex justify-between items-start">
-                      <h4 className="font-medium">Initial Consultation</h4>
-                      <span className="text-sm text-health-neutral-500">April 1, 2025</span>
-                    </div>
-                    <p className="mt-2 text-health-neutral-700">
-                      Patient presents with symptoms of hypertension. Initial readings show elevated blood pressure 
-                      (145/90 mmHg). Recommended lifestyle changes including reduced sodium intake and regular exercise.
-                      Will monitor for 2 weeks before considering medication.
-                    </p>
-                  </div>
                   
-                  <div className="p-4 border border-health-neutral-200 rounded-lg">
-                    <div className="flex justify-between items-start">
-                      <h4 className="font-medium">Follow-up Visit</h4>
-                      <span className="text-sm text-health-neutral-500">April 8, 2025</span>
-                    </div>
-                    <p className="mt-2 text-health-neutral-700">
-                      Patient reports adherence to recommended lifestyle changes. Blood pressure has improved slightly 
-                      (138/85 mmHg) but still elevated. Prescribed lisinopril 10mg once daily. Scheduled follow-up 
-                      in 2 weeks to assess medication efficacy and tolerability.
-                    </p>
-                  </div>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <Calendar className="mr-2 h-5 w-5 text-health-blue-500" />
+                        Upcoming Appointments
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-3">
+                        <li className="flex justify-between items-center p-2 hover:bg-health-neutral-50 rounded">
+                          <div>
+                            <p className="font-medium">Follow-up Appointment</p>
+                            <p className="text-sm text-health-neutral-500">Apr 15, 2025 - 10:00 AM</p>
+                          </div>
+                          <Button size="sm">Confirm</Button>
+                        </li>
+                        <li className="flex justify-between items-center p-2 hover:bg-health-neutral-50 rounded">
+                          <div>
+                            <p className="font-medium">Annual Physical</p>
+                            <p className="text-sm text-health-neutral-500">May 20, 2025 - 2:30 PM</p>
+                          </div>
+                          <Button size="sm">Confirm</Button>
+                        </li>
+                      </ul>
+                    </CardContent>
+                  </Card>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+              </TabsContent>
+              
+              <TabsContent value="records" className="space-y-6 mt-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Medical History</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-4">
+                      <li className="p-3 border rounded-lg">
+                        <div className="flex items-start">
+                          <FileText className="h-5 w-5 text-health-neutral-500 mt-1 mr-3" />
+                          <div>
+                            <p className="font-medium">Hypertension</p>
+                            <p className="text-sm text-health-neutral-500">Diagnosed: Jan 2023</p>
+                            <p className="text-sm text-health-neutral-600 mt-1">
+                              Patient has been managing hypertension with medication. Blood pressure has been well controlled with current regimen.
+                            </p>
+                          </div>
+                        </div>
+                      </li>
+                      <li className="p-3 border rounded-lg">
+                        <div className="flex items-start">
+                          <FileText className="h-5 w-5 text-health-neutral-500 mt-1 mr-3" />
+                          <div>
+                            <p className="font-medium">Type 2 Diabetes</p>
+                            <p className="text-sm text-health-neutral-500">Diagnosed: Mar 2022</p>
+                            <p className="text-sm text-health-neutral-600 mt-1">
+                              A1C levels have improved from 8.2% to 6.8% over the past year with medication and lifestyle changes.
+                            </p>
+                          </div>
+                        </div>
+                      </li>
+                    </ul>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recent Test Results</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-3">
+                      <li className="flex justify-between items-center p-2 hover:bg-health-neutral-50 rounded border-b last:border-0">
+                        <div className="flex items-center">
+                          <FileText className="h-5 w-5 text-health-neutral-500 mr-3" />
+                          <div>
+                            <p className="font-medium">Complete Blood Count</p>
+                            <p className="text-sm text-health-neutral-500">Apr 2, 2025</p>
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm">View</Button>
+                      </li>
+                      <li className="flex justify-between items-center p-2 hover:bg-health-neutral-50 rounded border-b last:border-0">
+                        <div className="flex items-center">
+                          <FileText className="h-5 w-5 text-health-neutral-500 mr-3" />
+                          <div>
+                            <p className="font-medium">Lipid Panel</p>
+                            <p className="text-sm text-health-neutral-500">Mar 15, 2025</p>
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm">View</Button>
+                      </li>
+                      <li className="flex justify-between items-center p-2 hover:bg-health-neutral-50 rounded border-b last:border-0">
+                        <div className="flex items-center">
+                          <FileText className="h-5 w-5 text-health-neutral-500 mr-3" />
+                          <div>
+                            <p className="font-medium">A1C Test</p>
+                            <p className="text-sm text-health-neutral-500">Feb 27, 2025</p>
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm">View</Button>
+                      </li>
+                    </ul>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="appointments" className="space-y-6 mt-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Appointment History</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-4">
+                      <li className="p-3 border rounded-lg">
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-start">
+                            <Calendar className="h-5 w-5 text-health-neutral-500 mt-1 mr-3" />
+                            <div>
+                              <p className="font-medium">Follow-up Appointment</p>
+                              <p className="text-sm text-health-neutral-500">Mar 1, 2025 - 11:30 AM</p>
+                              <p className="text-sm text-health-neutral-600 mt-1">
+                                Discussed medication adjustment and reviewed recent lab results. Patient reported improvement in symptoms.
+                              </p>
+                            </div>
+                          </div>
+                          <span className="bg-green-50 text-green-700 px-2 py-1 rounded text-xs">Completed</span>
+                        </div>
+                      </li>
+                      <li className="p-3 border rounded-lg">
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-start">
+                            <Calendar className="h-5 w-5 text-health-neutral-500 mt-1 mr-3" />
+                            <div>
+                              <p className="font-medium">Video Consultation</p>
+                              <p className="text-sm text-health-neutral-500">Feb 15, 2025 - 2:00 PM</p>
+                              <p className="text-sm text-health-neutral-600 mt-1">
+                                Patient reported mild headaches. Recommended increased hydration and sleep. Follow-up in two weeks if symptoms persist.
+                              </p>
+                            </div>
+                          </div>
+                          <span className="bg-green-50 text-green-700 px-2 py-1 rounded text-xs">Completed</span>
+                        </div>
+                      </li>
+                      <li className="p-3 border rounded-lg">
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-start">
+                            <Calendar className="h-5 w-5 text-health-neutral-500 mt-1 mr-3" />
+                            <div>
+                              <p className="font-medium">Annual Physical</p>
+                              <p className="text-sm text-health-neutral-500">Jan 10, 2025 - 9:15 AM</p>
+                              <p className="text-sm text-health-neutral-600 mt-1">
+                                Comprehensive physical examination completed. Ordered standard lab work. Overall health is stable.
+                              </p>
+                            </div>
+                          </div>
+                          <span className="bg-green-50 text-green-700 px-2 py-1 rounded text-xs">Completed</span>
+                        </div>
+                      </li>
+                    </ul>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Schedule New Appointment</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <p className="text-health-neutral-600">
+                        Select from available appointment slots to schedule your next visit with this patient.
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <Button variant="outline" className="justify-start">
+                          <Calendar className="mr-2 h-4 w-4" /> Apr 20, 2025 - 9:00 AM
+                        </Button>
+                        <Button variant="outline" className="justify-start">
+                          <Calendar className="mr-2 h-4 w-4" /> Apr 20, 2025 - 11:30 AM
+                        </Button>
+                        <Button variant="outline" className="justify-start">
+                          <Calendar className="mr-2 h-4 w-4" /> Apr 21, 2025 - 2:00 PM
+                        </Button>
+                        <Button variant="outline" className="justify-start">
+                          <Calendar className="mr-2 h-4 w-4" /> Apr 22, 2025 - 10:15 AM
+                        </Button>
+                      </div>
+                      <Button className="w-full mt-4">
+                        Schedule Custom Appointment
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </div>
+          
+          <div>
+            <PatientInfo patient={patient} />
+          </div>
+        </div>
       </div>
     </Layout>
   );

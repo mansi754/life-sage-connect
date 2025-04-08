@@ -28,6 +28,18 @@ export const getAlerts = async (resolved: boolean = false): Promise<Alert[]> => 
   return alerts.filter(alert => alert.isResolved === resolved);
 };
 
+export const getAlertsByPatientId = async (patientId: string): Promise<Alert[]> => {
+  // Simulate API delay
+  await delay(600);
+  return alerts.filter(alert => alert.patientId === patientId && !alert.isResolved);
+};
+
+export const getAlertHistory = async (patientId: string): Promise<Alert[]> => {
+  // Simulate API delay
+  await delay(600);
+  return alerts.filter(alert => alert.patientId === patientId && alert.isResolved);
+};
+
 export const resolveAlert = async (alertId: string): Promise<Alert> => {
   await delay(600);
   
@@ -59,3 +71,14 @@ export const createAlert = async (alert: Omit<Alert, "id" | "timestamp" | "isRes
   
   return newAlert;
 };
+
+export const getAllAlertsCount = async (): Promise<number> => {
+  await delay(200);
+  return alerts.filter(alert => !alert.isResolved).length;
+};
+
+export const getAlertsByType = async (type: Alert["type"]): Promise<Alert[]> => {
+  await delay(500);
+  return alerts.filter(alert => alert.type === type && !alert.isResolved);
+};
+
