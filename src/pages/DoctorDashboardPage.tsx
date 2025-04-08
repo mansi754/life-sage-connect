@@ -5,11 +5,16 @@ import Layout from "@/components/layout/Layout";
 import DoctorDashboard from "@/components/dashboard/DoctorDashboard";
 import { getCurrentUser } from "@/services/authService";
 import { useDoctorDashboard } from "@/hooks/useDoctorDashboard";
+import { useToast } from "@/hooks/use-toast";
+import { getAllAlertsCount, getAlertsByType } from "@/services/alertService";
 
 const DoctorDashboardPage = () => {
   const [loading, setLoading] = useState(true);
+  const [alertsCount, setAlertsCount] = useState<number | null>(null);
+  const [emergencyAlerts, setEmergencyAlerts] = useState<number | null>(null);
   const navigate = useNavigate();
   const dashboardData = useDoctorDashboard();
+  const { toast } = useToast();
 
   useEffect(() => {
     const checkAuth = () => {
@@ -31,6 +36,32 @@ const DoctorDashboardPage = () => {
     checkAuth();
   }, [navigate]);
 
+  useEffect(() => {
+    const fetchAlertData = async () => {
+      try {
+        const count = await getAllAlertsCount();
+        setAlertsCount(count);
+        
+        const emergencyList = await getAlertsByType("emergency");
+        setEmergencyAlerts(emergencyList.length);
+        
+        if (emergencyList.length > 0) {
+          toast({
+            title: "Emergency Alerts",
+            description: `You have ${emergencyList.length} unresolved emergency alerts.`,
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching alerts:", error);
+      }
+    };
+    
+    if (!loading) {
+      fetchAlertData();
+    }
+  }, [loading, toast]);
+
   if (loading || dashboardData.loading) {
     return (
       <Layout>
@@ -46,7 +77,11 @@ const DoctorDashboardPage = () => {
   return (
     <Layout>
       <div className="health-container py-8">
-        <DoctorDashboard {...dashboardData} />
+        <DoctorDashboard 
+          {...dashboardData} 
+          alertsCount={alertsCount || 0}
+          emergencyAlerts={emergencyAlerts || 0}
+        />
       </div>
     </Layout>
   );
