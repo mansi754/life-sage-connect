@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -52,16 +53,50 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-				sidebar: {
-					DEFAULT: 'hsl(var(--sidebar-background))',
-					foreground: 'hsl(var(--sidebar-foreground))',
-					primary: 'hsl(var(--sidebar-primary))',
-					'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-					accent: 'hsl(var(--sidebar-accent))',
-					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-					border: 'hsl(var(--sidebar-border))',
-					ring: 'hsl(var(--sidebar-ring))'
-				}
+        health: {
+          blue: {
+            50: '#E6F7FF',
+            100: '#BAE7FF',
+            200: '#91D5FF',
+            300: '#69C0FF',
+            400: '#40A9FF',
+            500: '#0EA5E9', // Primary health blue
+            600: '#0A85C9',
+            700: '#096BAB',
+            800: '#07508D',
+            900: '#05386B'
+          },
+          green: {
+            50: '#E6FFFA',
+            100: '#B3F5E9',
+            200: '#80EBD7',
+            300: '#4DE1C5',
+            400: '#1BD7B3',
+            500: '#16A34A', // Primary health green
+            600: '#138A3F',
+            700: '#107034',
+            800: '#0C5728',
+            900: '#083F1D'
+          },
+          neutral: {
+            50: '#F8FAFC',
+            100: '#F1F5F9',
+            200: '#E2E8F0',
+            300: '#CBD5E1',
+            400: '#94A3B8',
+            500: '#64748B',
+            600: '#475569',
+            700: '#334155',
+            800: '#1E293B',
+            900: '#0F172A'
+          },
+          alert: {
+            error: '#EF4444',
+            warning: '#F59E0B',
+            success: '#10B981',
+            info: '#3B82F6'
+          }
+        }
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -84,11 +119,16 @@ export default {
 					to: {
 						height: '0'
 					}
-				}
+				},
+        'pulse-subtle': {
+          '0%, 100%': { opacity: 1 },
+          '50%': { opacity: 0.8 }
+        }
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+        'pulse-subtle': 'pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
 			}
 		}
 	},
