@@ -26,13 +26,15 @@ const Navbar = () => {
             <Link to="/about" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
               About
             </Link>
-            <Link to="/services" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
+            <a href="/" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
               Services
-            </Link>
+            </a>
             <Link to="/login" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
               Login
             </Link>
-            <Button className="btn-primary">Register</Button>
+            <Button asChild className="btn-primary">
+              <Link to="/register">Register</Link>
+            </Button>
           </div>
 
           {/* Mobile menu button */}
@@ -67,13 +69,13 @@ const Navbar = () => {
             >
               About
             </Link>
-            <Link 
-              to="/services" 
+            <a 
+              href="/" 
               className="block py-2 text-health-neutral-600 hover:text-health-blue-500 transition-colors"
               onClick={() => setIsOpen(false)}
             >
               Services
-            </Link>
+            </a>
             <Link 
               to="/login" 
               className="block py-2 text-health-neutral-600 hover:text-health-blue-500 transition-colors"
@@ -82,10 +84,11 @@ const Navbar = () => {
               Login
             </Link>
             <Button 
+              asChild
               className="btn-primary w-full"
               onClick={() => setIsOpen(false)}
             >
-              Register
+              <Link to="/register">Register</Link>
             </Button>
           </div>
         )}

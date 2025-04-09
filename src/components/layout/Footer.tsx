@@ -26,19 +26,19 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/team" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
+                <a href="/about" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
                   Our Team
-                </Link>
+                </a>
               </li>
               <li>
-                <Link to="/careers" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
+                <a href="/about" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
                   Careers
-                </Link>
+                </a>
               </li>
               <li>
-                <Link to="/contact" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
+                <a href="/about" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
                   Contact
-                </Link>
+                </a>
               </li>
             </ul>
           </div>
@@ -47,24 +47,24 @@ const Footer = () => {
             <h5 className="font-semibold text-health-neutral-800 mb-4">Services</h5>
             <ul className="space-y-2">
               <li>
-                <Link to="/teleconsultation" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
+                <a href="/consultation/1" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
                   Teleconsultation
-                </Link>
+                </a>
               </li>
               <li>
-                <Link to="/mental-health" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
+                <a href="/mental-health-chat" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
                   Mental Health
-                </Link>
+                </a>
               </li>
               <li>
-                <Link to="/remote-monitoring" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
+                <a href="/" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
                   Remote Monitoring
-                </Link>
+                </a>
               </li>
               <li>
-                <Link to="/emergency" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
+                <a href="/" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
                   Emergency Care
-                </Link>
+                </a>
               </li>
             </ul>
           </div>
@@ -73,24 +73,24 @@ const Footer = () => {
             <h5 className="font-semibold text-health-neutral-800 mb-4">Legal</h5>
             <ul className="space-y-2">
               <li>
-                <Link to="/privacy" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
+                <a href="/" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
                   Privacy Policy
-                </Link>
+                </a>
               </li>
               <li>
-                <Link to="/terms" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
+                <a href="/" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
                   Terms of Service
-                </Link>
+                </a>
               </li>
               <li>
-                <Link to="/hipaa" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
+                <a href="/" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
                   HIPAA Compliance
-                </Link>
+                </a>
               </li>
               <li>
-                <Link to="/accessibility" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
+                <a href="/" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
                   Accessibility
-                </Link>
+                </a>
               </li>
             </ul>
           </div>
