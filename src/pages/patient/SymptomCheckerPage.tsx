@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import SymptomChecker from "@/components/patient/SymptomChecker";
+import SymptomAnalyzer from "@/components/patient/SymptomAnalyzer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -47,8 +48,9 @@ const SymptomCheckerPage = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="check" value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="check">Check Symptoms</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="check">Symptom Checker</TabsTrigger>
+                <TabsTrigger value="ai-analysis">AI Analysis</TabsTrigger>
                 <TabsTrigger value="history">History</TabsTrigger>
               </TabsList>
               
@@ -62,6 +64,10 @@ const SymptomCheckerPage = () => {
                     <Share className="mr-2 h-4 w-4" /> Share with Doctor
                   </Button>
                 </div>
+              </TabsContent>
+              
+              <TabsContent value="ai-analysis" className="pt-4">
+                <SymptomAnalyzer />
               </TabsContent>
               
               <TabsContent value="history" className="pt-4">

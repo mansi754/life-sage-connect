@@ -1,6 +1,8 @@
 
 import Layout from "@/components/layout/Layout";
 import MentalHealthChat from "@/components/mental-health/MentalHealthChat";
+import AIPatientAssistant from "@/components/mental-health/AIPatientAssistant";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const MentalHealthChatPage = () => {
   return (
@@ -13,7 +15,23 @@ const MentalHealthChatPage = () => {
             All conversations are confidential and you can choose to remain anonymous.
           </p>
         </div>
-        <MentalHealthChat />
+        
+        <Tabs defaultValue="chat" className="w-full">
+          <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
+            <TabsTrigger value="chat">Chat with Therapist</TabsTrigger>
+            <TabsTrigger value="ai">AI Assistant</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="chat">
+            <MentalHealthChat />
+          </TabsContent>
+          
+          <TabsContent value="ai">
+            <div className="max-w-3xl mx-auto">
+              <AIPatientAssistant />
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </Layout>
   );

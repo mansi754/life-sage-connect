@@ -1,334 +1,318 @@
 
 import { useState } from "react";
 import Layout from "@/components/layout/Layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Edit, Eye } from "lucide-react";
-import { Link } from "react-router-dom";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertCircle, Check, FilePlus, MessageCircle, Search, UserRound, Users } from "lucide-react";
+import AIDocAssistant from "@/components/doctor/AIDocAssistant";
 
 const patients = [
   {
-    id: "1",
-    name: "John Smith",
+    id: "P-001",
+    name: "John Doe",
     age: 45,
+    gender: "Male",
+    condition: "Hypertension, Diabetes",
     lastVisit: "Apr 2, 2025",
-    condition: "Hypertension",
-    risk: "medium",
-    nextAppointment: "Apr 15, 2025",
+    status: "Stable"
   },
   {
-    id: "2",
-    name: "Emily Johnson",
+    id: "P-002",
+    name: "Jane Smith",
     age: 32,
-    lastVisit: "Mar 28, 2025",
-    condition: "Diabetes",
-    risk: "high",
-    nextAppointment: "Apr 10, 2025",
+    gender: "Female",
+    condition: "Asthma",
+    lastVisit: "Mar 27, 2025",
+    status: "Improving"
   },
   {
-    id: "3",
-    name: "Michael Brown",
+    id: "P-003",
+    name: "Robert Johnson",
     age: 58,
-    lastVisit: "Mar 15, 2025",
-    condition: "Arthritis",
-    risk: "low",
-    nextAppointment: "May 5, 2025",
+    gender: "Male",
+    condition: "Coronary Artery Disease",
+    lastVisit: "Apr 5, 2025",
+    status: "Needs Attention"
   },
   {
-    id: "4",
+    id: "P-004",
     name: "Sarah Williams",
     age: 29,
-    lastVisit: "Apr 1, 2025",
-    condition: "Asthma",
-    risk: "medium",
-    nextAppointment: "Apr 22, 2025",
+    gender: "Female",
+    condition: "Migraine",
+    lastVisit: "Mar 15, 2025",
+    status: "Stable"
   },
   {
-    id: "5",
-    name: "Robert Garcia",
-    age: 67,
-    lastVisit: "Mar 20, 2025",
-    condition: "COPD",
-    risk: "high",
-    nextAppointment: "Apr 12, 2025",
+    id: "P-005",
+    name: "Michael Brown",
+    age: 41,
+    gender: "Male",
+    condition: "Lower Back Pain",
+    lastVisit: "Apr 1, 2025",
+    status: "Improving"
   },
 ];
 
 const PatientsPage = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [patientsList, setPatientsList] = useState(patients);
-  const [newPatient, setNewPatient] = useState({
-    name: "",
-    age: "",
-    condition: "",
-    notes: ""
-  });
-  const [editMode, setEditMode] = useState(false);
-  const [editingPatientId, setEditingPatientId] = useState<string | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { toast } = useToast();
-
-  const filteredPatients = patientsList.filter(patient => 
-    patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.condition.toLowerCase().includes(searchTerm.toLowerCase())
+  const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState("all");
+  const [currentPatientId, setCurrentPatientId] = useState("");
+  
+  const filteredPatients = patients.filter(patient => 
+    patient.name.toLowerCase().includes(search.toLowerCase()) || 
+    patient.condition.toLowerCase().includes(search.toLowerCase())
   );
+  
+  const statusFiltered = activeTab === "all" 
+    ? filteredPatients 
+    : activeTab === "needs-attention"
+      ? filteredPatients.filter(p => p.status === "Needs Attention")
+      : filteredPatients.filter(p => p.status !== "Needs Attention");
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
+  const handlePatientSelect = (patientId: string) => {
+    setCurrentPatientId(patientId);
   };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setNewPatient(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleAddPatient = () => {
-    if (newPatient.name && newPatient.age) {
-      const id = (Math.max(...patientsList.map(p => parseInt(p.id))) + 1).toString();
-      
-      const patientToAdd = {
-        id,
-        name: newPatient.name,
-        age: parseInt(newPatient.age),
-        lastVisit: "N/A",
-        condition: newPatient.condition || "Not specified",
-        risk: "low",
-        nextAppointment: "N/A",
-      };
-      
-      if (editMode && editingPatientId) {
-        setPatientsList(patientsList.map(p => 
-          p.id === editingPatientId ? { ...p, name: newPatient.name, age: parseInt(newPatient.age), condition: newPatient.condition || p.condition } : p
-        ));
-        
-        toast({
-          title: "Patient Updated",
-          description: `Patient details for ${newPatient.name} have been updated.`,
-          variant: "default",
-        });
-      } else {
-        setPatientsList([...patientsList, patientToAdd]);
-        
-        toast({
-          title: "Patient Added",
-          description: `${newPatient.name} has been added to your patients list.`,
-          variant: "default",
-        });
-      }
-      
-      setNewPatient({
-        name: "",
-        age: "",
-        condition: "",
-        notes: ""
-      });
-      setEditMode(false);
-      setEditingPatientId(null);
-      setIsDialogOpen(false);
-    } else {
-      toast({
-        title: "Required Fields",
-        description: "Please fill in the patient's name and age.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleEditPatient = (patient: typeof patients[0]) => {
-    setNewPatient({
-      name: patient.name,
-      age: patient.age.toString(),
-      condition: patient.condition,
-      notes: ""
-    });
-    setEditMode(true);
-    setEditingPatientId(patient.id);
-    setIsDialogOpen(true);
-  };
-
-  const handleCloseDialog = () => {
-    setNewPatient({
-      name: "",
-      age: "",
-      condition: "",
-      notes: ""
-    });
-    setEditMode(false);
-    setEditingPatientId(null);
-    setIsDialogOpen(false);
-  };
-
+  
   return (
     <Layout>
       <div className="health-container py-8">
         <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Patients</h1>
-            <p className="text-health-neutral-600">Manage and monitor your patients' health records.</p>
+            <h1 className="text-2xl font-bold tracking-tight">Patient Management</h1>
+            <p className="text-health-neutral-600">View and manage your patient records</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="btn-primary">
-                <Plus className="mr-2 h-4 w-4" /> Add Patient
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>{editMode ? "Edit Patient" : "Add New Patient"}</DialogTitle>
-                <DialogDescription>
-                  {editMode ? "Update the patient's information below." : "Enter the patient's details to add them to your list."}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    value={newPatient.name}
-                    onChange={handleInputChange}
-                    placeholder="e.g., John Smith"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="age">Age</Label>
-                  <Input
-                    id="age"
-                    name="age"
-                    type="number"
-                    value={newPatient.age}
-                    onChange={handleInputChange}
-                    placeholder="e.g., 45"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="condition">Primary Condition</Label>
-                  <Input
-                    id="condition"
-                    name="condition"
-                    value={newPatient.condition}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Hypertension"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Notes</Label>
-                  <Textarea
-                    id="notes"
-                    name="notes"
-                    value={newPatient.notes}
-                    onChange={handleInputChange}
-                    placeholder="Additional information about the patient..."
-                    rows={3}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={handleCloseDialog}>
-                  Cancel
-                </Button>
-                <Button onClick={handleAddPatient}>
-                  {editMode ? "Update Patient" : "Add Patient"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Patient List</CardTitle>
-            <CardDescription>
-              View and manage all your patients in one place.
-            </CardDescription>
-            <div className="mt-4 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-health-neutral-400" />
-              <Input
-                placeholder="Search patients by name or condition..."
-                value={searchTerm}
-                onChange={handleSearch}
-                className="pl-10"
-              />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Age</TableHead>
-                    <TableHead>Last Visit</TableHead>
-                    <TableHead>Condition</TableHead>
-                    <TableHead>Risk Level</TableHead>
-                    <TableHead>Next Appt.</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredPatients.length > 0 ? (
-                    filteredPatients.map((patient) => (
-                      <TableRow key={patient.id}>
-                        <TableCell className="font-medium">{patient.name}</TableCell>
-                        <TableCell>{patient.age}</TableCell>
-                        <TableCell>{patient.lastVisit}</TableCell>
-                        <TableCell>{patient.condition}</TableCell>
-                        <TableCell>
-                          <Badge className={
-                            patient.risk === "high" ? "bg-red-100 text-red-800 border-red-200" :
-                            patient.risk === "medium" ? "bg-amber-100 text-amber-800 border-amber-200" :
-                            "bg-green-100 text-green-800 border-green-200"
-                          }>
-                            {patient.risk === "high" ? "High" : 
-                            patient.risk === "medium" ? "Medium" : "Low"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{patient.nextAppointment}</TableCell>
-                        <TableCell className="text-right space-x-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleEditPatient(patient)}
-                            className="h-8 px-2 text-health-blue-500"
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                  <div>
+                    <CardTitle className="flex items-center">
+                      <Users className="mr-2 h-5 w-5" />
+                      Patients
+                    </CardTitle>
+                    <CardDescription>
+                      Manage your patient list and medical records
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-health-neutral-500" />
+                      <Input
+                        type="search"
+                        placeholder="Search patients..."
+                        className="pl-8 w-[200px]"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                      />
+                    </div>
+                    <Button>
+                      <FilePlus className="mr-2 h-4 w-4" />
+                      New Patient
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+                  <TabsList className="mb-4">
+                    <TabsTrigger value="all">All Patients</TabsTrigger>
+                    <TabsTrigger value="needs-attention">
+                      <AlertCircle className="mr-1 h-4 w-4 text-destructive" />
+                      Needs Attention
+                    </TabsTrigger>
+                    <TabsTrigger value="stable">
+                      <Check className="mr-1 h-4 w-4 text-green-500" />
+                      Stable
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="all" className="m-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>ID</TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Age</TableHead>
+                          <TableHead>Condition</TableHead>
+                          <TableHead>Last Visit</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {statusFiltered.map((patient) => (
+                          <TableRow 
+                            key={patient.id} 
+                            className={patient.status === "Needs Attention" ? "bg-red-50" : ""}
+                            onClick={() => handlePatientSelect(patient.id)}
                           >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            asChild
-                            variant="outline" 
-                            size="sm"
-                            className="h-8 px-2 text-health-green-500"
+                            <TableCell>{patient.id}</TableCell>
+                            <TableCell>
+                              <div className="font-medium">{patient.name}</div>
+                              <div className="text-sm text-health-neutral-500">{patient.gender}</div>
+                            </TableCell>
+                            <TableCell>{patient.age}</TableCell>
+                            <TableCell>{patient.condition}</TableCell>
+                            <TableCell>{patient.lastVisit}</TableCell>
+                            <TableCell>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                patient.status === "Stable" 
+                                  ? "bg-green-100 text-green-800" 
+                                  : patient.status === "Improving" 
+                                    ? "bg-blue-100 text-blue-800" 
+                                    : "bg-red-100 text-red-800"
+                              }`}>
+                                {patient.status}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex space-x-2">
+                                <Button variant="outline" size="sm">
+                                  <UserRound className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" size="sm">
+                                  <MessageCircle className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TabsContent>
+                  
+                  <TabsContent value="needs-attention" className="m-0">
+                    {/* Same table with filtered data */}
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>ID</TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Age</TableHead>
+                          <TableHead>Condition</TableHead>
+                          <TableHead>Last Visit</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {statusFiltered.map((patient) => (
+                          <TableRow 
+                            key={patient.id} 
+                            className={patient.status === "Needs Attention" ? "bg-red-50" : ""}
+                            onClick={() => handlePatientSelect(patient.id)}
                           >
-                            <Link to={`/patient/${patient.id}`}>
-                              <Eye className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-4 text-health-neutral-500">
-                        No patients found matching "{searchTerm}".
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-            
-            <div className="mt-4 text-center text-sm text-health-neutral-500">
-              Showing {filteredPatients.length} of {patientsList.length} patients
-            </div>
-          </CardContent>
-        </Card>
+                            <TableCell>{patient.id}</TableCell>
+                            <TableCell>
+                              <div className="font-medium">{patient.name}</div>
+                              <div className="text-sm text-health-neutral-500">{patient.gender}</div>
+                            </TableCell>
+                            <TableCell>{patient.age}</TableCell>
+                            <TableCell>{patient.condition}</TableCell>
+                            <TableCell>{patient.lastVisit}</TableCell>
+                            <TableCell>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                patient.status === "Stable" 
+                                  ? "bg-green-100 text-green-800" 
+                                  : patient.status === "Improving" 
+                                    ? "bg-blue-100 text-blue-800" 
+                                    : "bg-red-100 text-red-800"
+                              }`}>
+                                {patient.status}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex space-x-2">
+                                <Button variant="outline" size="sm">
+                                  <UserRound className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" size="sm">
+                                  <MessageCircle className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TabsContent>
+                  
+                  <TabsContent value="stable" className="m-0">
+                    {/* Same table with filtered data */}
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>ID</TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Age</TableHead>
+                          <TableHead>Condition</TableHead>
+                          <TableHead>Last Visit</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {statusFiltered.map((patient) => (
+                          <TableRow 
+                            key={patient.id} 
+                            className={patient.status === "Needs Attention" ? "bg-red-50" : ""}
+                            onClick={() => handlePatientSelect(patient.id)}
+                          >
+                            <TableCell>{patient.id}</TableCell>
+                            <TableCell>
+                              <div className="font-medium">{patient.name}</div>
+                              <div className="text-sm text-health-neutral-500">{patient.gender}</div>
+                            </TableCell>
+                            <TableCell>{patient.age}</TableCell>
+                            <TableCell>{patient.condition}</TableCell>
+                            <TableCell>{patient.lastVisit}</TableCell>
+                            <TableCell>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                patient.status === "Stable" 
+                                  ? "bg-green-100 text-green-800" 
+                                  : patient.status === "Improving" 
+                                    ? "bg-blue-100 text-blue-800" 
+                                    : "bg-red-100 text-red-800"
+                              }`}>
+                                {patient.status}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex space-x-2">
+                                <Button variant="outline" size="sm">
+                                  <UserRound className="h-4 w-4" />
+                                </Button>
+                                <Button variant="outline" size="sm">
+                                  <MessageCircle className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+              <CardFooter className="border-t px-6 py-4">
+                <div className="text-sm text-health-neutral-500">
+                  Showing {statusFiltered.length} of {patients.length} patients
+                </div>
+              </CardFooter>
+            </Card>
+          </div>
+          
+          <div className="lg:col-span-1">
+            <AIDocAssistant />
+          </div>
+        </div>
       </div>
     </Layout>
   );
