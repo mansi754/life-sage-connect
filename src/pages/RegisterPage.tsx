@@ -1,14 +1,13 @@
 
-import Layout from "@/components/layout/Layout";
-import Register from "@/components/auth/Register";
+import React from 'react';
+import Layout from '@/components/layout/Layout';
+import Register from '@/components/auth/Register';
 
 const RegisterPage = () => {
   return (
     <Layout>
-      <div className="py-16 bg-health-neutral-50">
-        <div className="max-w-md mx-auto">
-          <Register />
-        </div>
+      <div className="health-container py-8">
+        <Register />
       </div>
     </Layout>
   );

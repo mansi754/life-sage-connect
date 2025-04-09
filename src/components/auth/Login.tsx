@@ -1,143 +1,153 @@
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, LogIn } from "lucide-react";
-import { LoginUser } from "@/types/user";
-import { loginUser } from "@/services/authService";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+
+type LoginFormValues = {
+  email: string;
+  password: string;
+};
 
 const Login = () => {
-  const [formData, setFormData] = useState<LoginUser>({
-    email: "",
-    password: "",
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const { signIn } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormValues>();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
+  const onSubmit = async (data: LoginFormValues) => {
+    setIsLoading(true);
+    setErrorMessage(null);
+    
     try {
-      const user = await loginUser(formData);
+      const { error } = await signIn(data.email, data.password);
       
-      toast({
-        title: "Login Successful",
-        description: `Welcome back, ${user.firstName}!`,
-        variant: "default",
-      });
-
-      // Redirect based on user role
-      if (user.role === "doctor") {
-        navigate("/doctor/dashboard");
-      } else {
-        navigate("/patient/dashboard");
+      if (error) {
+        setErrorMessage(error.message || "Failed to sign in");
+        return;
       }
-    } catch (error) {
-      toast({
-        title: "Login Failed",
-        description: "Invalid email or password. Please try again.",
-        variant: "destructive",
-      });
+      
+      // Get user profile to determine redirect
+      setTimeout(async () => {
+        // We need to fetch the user profile to determine the role
+        // Using any type for now to bypass TypeScript error
+        const { data: profileData } = await (supabase as any)
+          .from('profiles')
+          .select('role')
+          .single();
+        
+        if (profileData && profileData.role === 'doctor') {
+          navigate('/doctor/dashboard');
+        } else {
+          navigate('/patient/dashboard');
+        }
+      }, 0);
+      
+    } catch (error: any) {
+      setErrorMessage(error.message || "An unexpected error occurred");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="max-w-md w-full mx-auto p-8 bg-white rounded-lg shadow-sm border border-health-neutral-200">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-health-neutral-900">Welcome Back</h2>
-        <p className="text-health-neutral-600 mt-2">Sign in to your LifeSage Health account</p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            placeholder="you@example.com"
-            required
-            value={formData.email}
-            onChange={handleChange}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
-            <Link to="/forgot-password" className="text-sm text-health-blue-500 hover:text-health-blue-700">
-              Forgot password?
+    <div className="flex items-center justify-center min-h-[80vh]">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-2xl text-center">Sign In</CardTitle>
+          <CardDescription className="text-center">
+            Enter your credentials to access your account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit(onSubmit)}>
+            {errorMessage && (
+              <Alert className="mb-4 bg-red-50 text-red-700 border-red-200">
+                <AlertDescription>{errorMessage}</AlertDescription>
+              </Alert>
+            )}
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  {...register("email", {
+                    required: "Email is required",
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: "Invalid email address",
+                    },
+                  })}
+                />
+                {errors.email && (
+                  <p className="text-sm text-red-500">{errors.email.message}</p>
+                )}
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Password</Label>
+                  <Link to="#" className="text-sm text-health-blue-600 hover:underline">
+                    Forgot password?
+                  </Link>
+                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  {...register("password", {
+                    required: "Password is required",
+                    minLength: {
+                      value: 6,
+                      message: "Password must be at least 6 characters",
+                    },
+                  })}
+                />
+                {errors.password && (
+                  <p className="text-sm text-red-500">{errors.password.message}</p>
+                )}
+              </div>
+              
+              <Button
+                type="submit"
+                className="w-full bg-health-blue-600 hover:bg-health-blue-700"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Signing in...
+                  </div>
+                ) : (
+                  "Sign In"
+                )}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+        <CardFooter>
+          <p className="text-center w-full text-sm text-gray-600">
+            Don't have an account?{" "}
+            <Link to="/register" className="text-health-blue-600 hover:underline">
+              Sign up
             </Link>
-          </div>
-          <div className="relative">
-            <Input
-              id="password"
-              name="password"
-              type={showPassword ? "text" : "password"}
-              placeholder="••••••••"
-              required
-              value={formData.password}
-              onChange={handleChange}
-            />
-            <button
-              type="button"
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-health-neutral-500"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <Checkbox id="remember" />
-          <label
-            htmlFor="remember"
-            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-health-neutral-600"
-          >
-            Remember me
-          </label>
-        </div>
-
-        <Button type="submit" className="w-full btn-primary" disabled={loading}>
-          {loading ? (
-            <span className="flex items-center">
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Signing in...
-            </span>
-          ) : (
-            <span className="flex items-center">
-              <LogIn className="mr-2 h-4 w-4" /> Sign In
-            </span>
-          )}
-        </Button>
-      </form>
-
-      <div className="mt-6 text-center">
-        <p className="text-health-neutral-600">
-          Don't have an account?{" "}
-          <Link to="/register" className="text-health-blue-500 hover:text-health-blue-700 font-medium">
-            Create an account
-          </Link>
-        </p>
-      </div>
+          </p>
+        </CardFooter>
+      </Card>
     </div>
   );
 };
