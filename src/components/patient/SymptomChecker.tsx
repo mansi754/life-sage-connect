@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { AlertCircle, Search, Loader2 } from "lucide-react";
+import { AlertCircle, Search, Loader2, Save, Share, Edit, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { checkSymptoms } from "@/services/symptomCheckerService";
+import { Input } from "@/components/ui/input";
 
 type SymptomResult = {
   severity: "low" | "medium" | "high";
@@ -15,36 +16,40 @@ type SymptomResult = {
   seekMedicalAttention: boolean;
 };
 
-const bodyParts = [
-  "Head",
-  "Chest",
-  "Abdomen",
-  "Back",
-  "Arms",
-  "Legs",
-  "Joints",
-  "Skin",
-  "General"
-];
-
-const commonSymptoms = [
-  "Fever",
-  "Cough",
-  "Headache",
-  "Fatigue",
-  "Nausea",
-  "Dizziness",
-  "Pain",
-  "Rash"
-];
-
 const SymptomChecker = () => {
   const [symptoms, setSymptoms] = useState("");
   const [selectedBodyParts, setSelectedBodyParts] = useState<string[]>([]);
   const [duration, setDuration] = useState("recent");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SymptomResult | null>(null);
+  const [customBodyPart, setCustomBodyPart] = useState("");
+  const [customSymptom, setCustomSymptom] = useState("");
+  const [editingRecommendation, setEditingRecommendation] = useState(false);
+  const [recommendations, setRecommendations] = useState<string[]>([]);
   const { toast } = useToast();
+
+  const [bodyParts, setBodyParts] = useState([
+    "Head",
+    "Chest",
+    "Abdomen",
+    "Back",
+    "Arms",
+    "Legs",
+    "Joints",
+    "Skin",
+    "General"
+  ]);
+
+  const [commonSymptoms, setCommonSymptoms] = useState([
+    "Fever",
+    "Cough",
+    "Headache",
+    "Fatigue",
+    "Nausea",
+    "Dizziness",
+    "Pain",
+    "Rash"
+  ]);
 
   const handleBodyPartChange = (part: string) => {
     if (selectedBodyParts.includes(part)) {
@@ -57,6 +62,32 @@ const SymptomChecker = () => {
   const handleAddCommonSymptom = (symptom: string) => {
     if (!symptoms.includes(symptom)) {
       setSymptoms(prev => prev ? `${prev}, ${symptom}` : symptom);
+    }
+  };
+
+  const handleAddCustomBodyPart = () => {
+    if (customBodyPart && !bodyParts.includes(customBodyPart)) {
+      setBodyParts([...bodyParts, customBodyPart]);
+      setSelectedBodyParts([...selectedBodyParts, customBodyPart]);
+      setCustomBodyPart("");
+      toast({
+        title: "Body Part Added",
+        description: `Added '${customBodyPart}' to the body parts list.`,
+        variant: "default",
+      });
+    }
+  };
+
+  const handleAddCustomSymptom = () => {
+    if (customSymptom && !commonSymptoms.includes(customSymptom)) {
+      setCommonSymptoms([...commonSymptoms, customSymptom]);
+      handleAddCommonSymptom(customSymptom);
+      setCustomSymptom("");
+      toast({
+        title: "Symptom Added",
+        description: `Added '${customSymptom}' to your symptoms.`,
+        variant: "default",
+      });
     }
   };
 
@@ -79,6 +110,7 @@ const SymptomChecker = () => {
       });
       
       setResult(result);
+      setRecommendations(result.recommendations);
     } catch (error) {
       toast({
         title: "Error",
@@ -95,6 +127,35 @@ const SymptomChecker = () => {
     setSelectedBodyParts([]);
     setDuration("recent");
     setResult(null);
+  };
+
+  const handleUpdateRecommendation = (index: number, value: string) => {
+    const updatedRecommendations = [...recommendations];
+    updatedRecommendations[index] = value;
+    setRecommendations(updatedRecommendations);
+  };
+
+  const handleAddRecommendation = () => {
+    setRecommendations([...recommendations, "New recommendation"]);
+  };
+
+  const handleRemoveRecommendation = (index: number) => {
+    setRecommendations(recommendations.filter((_, i) => i !== index));
+  };
+
+  const handleSaveRecommendations = () => {
+    if (result) {
+      setResult({
+        ...result,
+        recommendations: recommendations
+      });
+    }
+    setEditingRecommendation(false);
+    toast({
+      title: "Recommendations Updated",
+      description: "Your recommendations have been updated successfully.",
+      variant: "default",
+    });
   };
 
   return (
@@ -115,7 +176,26 @@ const SymptomChecker = () => {
             </div>
             
             <div>
-              <p className="text-sm text-health-neutral-500 mb-2">Common symptoms:</p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-health-neutral-500 mb-2">Common symptoms:</p>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    placeholder="Add custom symptom"
+                    value={customSymptom}
+                    onChange={(e) => setCustomSymptom(e.target.value)}
+                    className="text-sm h-8"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleAddCustomSymptom}
+                    disabled={!customSymptom}
+                  >
+                    Add
+                  </Button>
+                </div>
+              </div>
               <div className="flex flex-wrap gap-2">
                 {commonSymptoms.map((symptom) => (
                   <Button
@@ -133,7 +213,26 @@ const SymptomChecker = () => {
             </div>
             
             <div className="space-y-2">
-              <Label>Where are you experiencing symptoms?</Label>
+              <div className="flex items-center justify-between">
+                <Label>Where are you experiencing symptoms?</Label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    placeholder="Add body part"
+                    value={customBodyPart}
+                    onChange={(e) => setCustomBodyPart(e.target.value)}
+                    className="text-sm h-8"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleAddCustomBodyPart}
+                    disabled={!customBodyPart}
+                  >
+                    Add
+                  </Button>
+                </div>
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {bodyParts.map((part) => (
                   <div key={part} className="flex items-center space-x-2">
@@ -250,15 +349,72 @@ const SymptomChecker = () => {
           </div>
           
           <div>
-            <h3 className="font-medium text-lg mb-2">Recommendations</h3>
-            <ul className="space-y-2">
-              {result.recommendations.map((recommendation, index) => (
-                <li key={index} className="flex items-start">
-                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-health-blue-500 mt-2 mr-2"></span>
-                  <span>{recommendation}</span>
-                </li>
-              ))}
-            </ul>
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="font-medium text-lg">Recommendations</h3>
+              {!editingRecommendation ? (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setEditingRecommendation(true)}
+                >
+                  <Edit className="mr-2 h-4 w-4" /> Edit
+                </Button>
+              ) : (
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setEditingRecommendation(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    size="sm"
+                    onClick={handleSaveRecommendations}
+                  >
+                    <Save className="mr-2 h-4 w-4" /> Save
+                  </Button>
+                </div>
+              )}
+            </div>
+            
+            {!editingRecommendation ? (
+              <ul className="space-y-2">
+                {recommendations.map((recommendation, index) => (
+                  <li key={index} className="flex items-start">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-health-blue-500 mt-2 mr-2"></span>
+                    <span>{recommendation}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="space-y-3">
+                {recommendations.map((recommendation, index) => (
+                  <div key={index} className="flex items-center space-x-2">
+                    <Input 
+                      value={recommendation}
+                      onChange={(e) => handleUpdateRecommendation(index, e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleRemoveRecommendation(index)}
+                      className="text-red-500"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+                <Button 
+                  variant="outline" 
+                  onClick={handleAddRecommendation}
+                  className="w-full"
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Add Recommendation
+                </Button>
+              </div>
+            )}
           </div>
           
           {result.seekMedicalAttention && (
@@ -278,6 +434,15 @@ const SymptomChecker = () => {
             </Button>
             <Button className="btn-primary flex-1">
               Request Doctor Consultation
+            </Button>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button variant="outline" className="flex items-center">
+              <Save className="mr-2 h-4 w-4" /> Save Results
+            </Button>
+            <Button variant="outline" className="flex items-center">
+              <Share className="mr-2 h-4 w-4" /> Share with Doctor
             </Button>
           </div>
           

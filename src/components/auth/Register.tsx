@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, UserPlus } from "lucide-react";
-import { RegisterUser } from "@/types/user";
+import { RegisterUser, UserRole } from "@/types/user";
 import { registerUser } from "@/services/authService";
 
 const Register = () => {
@@ -29,7 +29,7 @@ const Register = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleRoleChange = (value: string) => {
+  const handleRoleChange = (value: UserRole) => {
     setFormData((prev) => ({ ...prev, role: value }));
   };
 
@@ -168,7 +168,7 @@ const Register = () => {
           <RadioGroup 
             defaultValue="patient" 
             value={formData.role}
-            onValueChange={handleRoleChange}
+            onValueChange={handleRoleChange as (value: string) => void}
             className="flex space-x-4"
           >
             <div className="flex items-center space-x-2">
