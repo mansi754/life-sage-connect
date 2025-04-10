@@ -1,6 +1,6 @@
 
 import { useState, useRef, useEffect } from "react";
-import { getPatientAssistance } from "@/services/openaiService";
+import { getPatientAssistance, initializeOpenAI } from "@/services/openaiService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +30,11 @@ const AIPatientAssistant = () => {
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Initialize OpenAI on component mount
+    initializeOpenAI();
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
@@ -107,39 +112,10 @@ const AIPatientAssistant = () => {
           </AlertDescription>
         </Alert>
 
-        {showApiKeyInput ? (
-          <div className="space-y-2 mb-4">
-            <label htmlFor="patient-api-key" className="text-sm font-medium">
-              Enter your OpenAI API Key
-            </label>
-            <input
-              id="patient-api-key"
-              type="password"
-              className="w-full p-2 border rounded"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="sk-..."
-            />
-            <Button 
-              onClick={() => {
-                localStorage.setItem("openai-api-key", apiKey);
-                setShowApiKeyInput(false);
-              }}
-              size="sm"
-            >
-              Save Key
-            </Button>
-          </div>
-        ) : (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setShowApiKeyInput(true)}
-            className="text-xs mb-4"
-          >
-            Configure API Key
-          </Button>
-        )}
+        {/* API key is now pre-configured */}
+        <div className="p-2 text-xs text-health-neutral-600 bg-health-neutral-50 rounded mb-4">
+          OpenAI API key is configured
+        </div>
 
         <ScrollArea className="h-[350px] pr-4">
           <div className="space-y-4">

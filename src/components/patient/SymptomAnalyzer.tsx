@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { analyzeSymptoms } from "@/services/openaiService";
+import { useState, useEffect } from "react";
+import { analyzeSymptoms, initializeOpenAI } from "@/services/openaiService";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,12 @@ const SymptomAnalyzer = () => {
   const [loading, setLoading] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+
+  // Initialize OpenAI on component mount
+  useEffect(() => {
+    // The key is now set in the service
+    initializeOpenAI();
+  }, []);
 
   const handleAnalyze = async () => {
     if (!symptoms.trim()) {
@@ -53,39 +59,10 @@ const SymptomAnalyzer = () => {
           </AlertDescription>
         </Alert>
 
-        {showApiKeyInput ? (
-          <div className="space-y-2">
-            <label htmlFor="api-key" className="text-sm font-medium">
-              Enter your OpenAI API Key
-            </label>
-            <input
-              id="api-key"
-              type="password"
-              className="w-full p-2 border rounded"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="sk-..."
-            />
-            <Button 
-              onClick={() => {
-                localStorage.setItem("openai-api-key", apiKey);
-                setShowApiKeyInput(false);
-              }}
-              size="sm"
-            >
-              Save Key
-            </Button>
-          </div>
-        ) : (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setShowApiKeyInput(true)}
-            className="text-xs"
-          >
-            Configure API Key
-          </Button>
-        )}
+        {/* API key is now pre-configured */}
+        <div className="p-2 text-xs text-health-neutral-600 bg-health-neutral-50 rounded mb-4">
+          OpenAI API key is configured
+        </div>
 
         <div className="space-y-2">
           <label htmlFor="symptoms" className="text-sm font-medium">
