@@ -1,12 +1,13 @@
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, UserPlus } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Eye, EyeOff, UserPlus, FileText, Upload, AlertCircle, X } from "lucide-react";
 import { RegisterUser, UserRole } from "@/types/user";
 import { registerUser } from "@/services/authService";
 
@@ -18,9 +19,13 @@ const Register = () => {
     password: "",
     confirmPassword: "",
     role: "patient",
+    specialty: "",
+    licenseNumber: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [degreeFile, setDegreeFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -31,6 +36,27 @@ const Register = () => {
 
   const handleRoleChange = (value: UserRole) => {
     setFormData((prev) => ({ ...prev, role: value }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      setDegreeFile(file);
+      // Also add to form data
+      setFormData(prev => ({ ...prev, degreeFile: file }));
+    }
+  };
+
+  const clearSelectedFile = () => {
+    setDegreeFile(null);
+    setFormData(prev => {
+      const newData = { ...prev };
+      delete newData.degreeFile;
+      return newData;
+    });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,12 +73,30 @@ const Register = () => {
       return;
     }
 
+    // Check if doctor role selected but no degree uploaded
+    if (formData.role === "doctor" && !degreeFile) {
+      toast({
+        title: "Missing Document",
+        description: "Please upload your medical degree for verification.",
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
       const user = await registerUser(formData);
       
+      let successMessage = "Your account has been created. Welcome to LifeSage Health!";
+      
+      // Add verification message for doctors
+      if (user.role === "doctor") {
+        successMessage = "Your account has been created. Your medical credentials will be verified by our team before you can fully access the platform.";
+      }
+      
       toast({
         title: "Registration Successful",
-        description: "Your account has been created. Welcome to LifeSage Health!",
+        description: successMessage,
         variant: "default",
       });
 
@@ -62,10 +106,10 @@ const Register = () => {
       } else {
         navigate("/patient/dashboard");
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Registration Failed",
-        description: "There was an error creating your account. Please try again.",
+        description: error.message || "There was an error creating your account. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -181,6 +225,89 @@ const Register = () => {
             </div>
           </RadioGroup>
         </div>
+
+        {/* Doctor specific fields - only show when doctor role is selected */}
+        {formData.role === "doctor" && (
+          <div className="space-y-4 p-4 bg-health-blue-50 rounded-md border border-health-blue-100">
+            <div className="flex items-center gap-2 text-health-blue-700">
+              <FileText size={18} />
+              <h3 className="font-medium">Healthcare Provider Information</h3>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="specialty">Medical Specialty</Label>
+              <Input
+                id="specialty"
+                name="specialty"
+                placeholder="e.g., Cardiology, General Practice"
+                value={formData.specialty || ""}
+                onChange={handleChange}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="licenseNumber">Medical License Number</Label>
+              <Input
+                id="licenseNumber"
+                name="licenseNumber"
+                placeholder="License ID"
+                value={formData.licenseNumber || ""}
+                onChange={handleChange}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="degreeFile">Upload Medical Degree (Required)</Label>
+              <div className="mt-1">
+                <div className="flex items-center justify-center w-full">
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-health-neutral-50 border-health-neutral-300 hover:bg-health-neutral-100">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      {degreeFile ? (
+                        <div className="flex flex-col items-center">
+                          <FileText className="w-8 h-8 mb-2 text-health-blue-500" />
+                          <p className="text-sm text-health-neutral-700 truncate max-w-[200px]">{degreeFile.name}</p>
+                          <p className="text-xs text-health-neutral-500">
+                            {(degreeFile.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                          <button
+                            type="button"
+                            onClick={clearSelectedFile}
+                            className="mt-2 flex items-center text-xs text-health-red-600 hover:underline"
+                          >
+                            <X size={12} className="mr-1" /> Remove file
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <Upload className="w-8 h-8 mb-2 text-health-neutral-400" />
+                          <p className="mb-2 text-sm text-health-neutral-500">
+                            <span className="font-semibold">Click to upload</span> or drag and drop
+                          </p>
+                          <p className="text-xs text-health-neutral-500">PDF, PNG, or JPG (MAX. 10MB)</p>
+                        </>
+                      )}
+                    </div>
+                    <input 
+                      id="degreeFile" 
+                      type="file" 
+                      className="hidden" 
+                      accept=".pdf,.png,.jpg,.jpeg"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <Alert className="bg-health-blue-50 text-health-blue-800 border-health-blue-200">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Your documents will be reviewed by our team for verification. This process usually takes 1-2 business days.
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
 
         <Button type="submit" className="w-full btn-primary" disabled={loading}>
           {loading ? (

@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, Calendar, Search, Bell, Video, FileText, Clock, User, AlertTriangle } from "lucide-react";
-import { PatientRecord, Alert, Appointment } from "@/types/user";
+import { PatientRecord, Alert, Appointment, User as UserType, VerificationStatus as VerificationStatusType } from "@/types/user";
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem, navigationMenuTriggerStyle } from "@/components/ui/navigation-menu";
+import VerificationStatus from "@/components/doctor/VerificationStatus";
 
 interface DoctorDashboardProps {
   filteredPatients: PatientRecord[];
@@ -17,6 +18,7 @@ interface DoctorDashboardProps {
   handleUpdateAppointment: (appointmentId: string, status: Appointment["status"]) => void;
   alertsCount: number;
   emergencyAlerts: number;
+  currentUser?: UserType;
 }
 
 const DoctorDashboard = ({
@@ -28,7 +30,8 @@ const DoctorDashboard = ({
   handleAlertRespond,
   handleUpdateAppointment,
   alertsCount,
-  emergencyAlerts
+  emergencyAlerts,
+  currentUser
 }: DoctorDashboardProps) => {
 
   const getPatientStatusBadge = (patientRecord: PatientRecord) => {
@@ -169,6 +172,13 @@ const DoctorDashboard = ({
         </NavigationMenuList>
       </NavigationMenu>
 
+      {/* Doctor verification status card */}
+      {currentUser?.role === "doctor" && (
+        <div className="mb-4">
+          <VerificationStatus status={currentUser?.verificationStatus} />
+        </div>
+      )}
+      
       <div className="space-y-4">
         <Card>
           <CardHeader>

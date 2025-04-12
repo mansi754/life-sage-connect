@@ -25,6 +25,7 @@ import InsurancePage from "./pages/patient/InsurancePage";
 import PatientsPage from "./pages/doctor/PatientsPage";
 import SchedulePage from "./pages/doctor/SchedulePage";
 import AlertsPage from "./pages/doctor/AlertsPage";
+import VerificationPage from "./pages/doctor/VerificationPage";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ const App = () => (
           <Route path="/doctor/patients" element={<PatientsPage />} />
           <Route path="/doctor/schedule" element={<SchedulePage />} />
           <Route path="/doctor/alerts" element={<AlertsPage />} />
+          <Route path="/doctor/verification" element={<VerificationPage />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

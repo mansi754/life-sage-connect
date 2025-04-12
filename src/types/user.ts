@@ -1,5 +1,6 @@
 
 export type UserRole = "patient" | "doctor";
+export type VerificationStatus = "pending" | "verified" | "rejected";
 
 export interface User {
   id: string;
@@ -7,6 +8,7 @@ export interface User {
   lastName: string;
   email: string;
   role: UserRole;
+  verificationStatus?: VerificationStatus;
   createdAt: string;
   updatedAt: string;
 }
@@ -23,6 +25,9 @@ export interface RegisterUser {
   password: string;
   confirmPassword: string;
   role: UserRole;
+  degreeFile?: File;
+  specialty?: string;
+  licenseNumber?: string;
 }
 
 // Add patient-specific types

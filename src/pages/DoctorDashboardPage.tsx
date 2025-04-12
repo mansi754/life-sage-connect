@@ -7,11 +7,13 @@ import { getCurrentUser } from "@/services/authService";
 import { useDoctorDashboard } from "@/hooks/useDoctorDashboard";
 import { useToast } from "@/hooks/use-toast";
 import { getAllAlertsCount, getAlertsByType } from "@/services/alertService";
+import { User } from "@/types/user";
 
 const DoctorDashboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [alertsCount, setAlertsCount] = useState<number | null>(null);
   const [emergencyAlerts, setEmergencyAlerts] = useState<number | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const navigate = useNavigate();
   const dashboardData = useDoctorDashboard();
   const { toast } = useToast();
@@ -30,6 +32,7 @@ const DoctorDashboardPage = () => {
         return;
       }
       
+      setCurrentUser(user);
       setLoading(false);
     };
     
@@ -87,6 +90,7 @@ const DoctorDashboardPage = () => {
           handleUpdateAppointment={dashboardData.handleUpdateAppointment}
           alertsCount={alertsCount || 0}
           emergencyAlerts={emergencyAlerts || 0}
+          currentUser={currentUser}
         />
       </div>
     </Layout>
