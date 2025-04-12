@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, UserPlus, FileText, Upload, AlertCircle, X } from "lucide-react";
 import { RegisterUser, UserRole } from "@/types/user";
-import { registerUser } from "@/services/authService";
+import { registerUser, registerDoctor } from "@/services/authService";
 
 const Register = () => {
   const [formData, setFormData] = useState<RegisterUser>({
@@ -42,18 +42,11 @@ const Register = () => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       setDegreeFile(file);
-      // Also add to form data
-      setFormData(prev => ({ ...prev, degreeFile: file }));
     }
   };
 
   const clearSelectedFile = () => {
     setDegreeFile(null);
-    setFormData(prev => {
-      const newData = { ...prev };
-      delete newData.degreeFile;
-      return newData;
-    });
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -73,32 +66,45 @@ const Register = () => {
       return;
     }
 
-    // Check if doctor role selected but no degree uploaded
-    if (formData.role === "doctor" && !degreeFile) {
-      toast({
-        title: "Missing Document",
-        description: "Please upload your medical degree for verification.",
-        variant: "destructive",
-      });
-      setLoading(false);
-      return;
-    }
-
     try {
-      const user = await registerUser(formData);
+      let user;
       
-      let successMessage = "Your account has been created. Welcome to LifeSage Health!";
-      
-      // Add verification message for doctors
-      if (user.role === "doctor") {
-        successMessage = "Your account has been created. Your medical credentials will be verified by our team before you can fully access the platform.";
+      // Different registration flow for doctors vs patients
+      if (formData.role === "doctor") {
+        // Check if all doctor fields are filled
+        if (!formData.specialty || !formData.licenseNumber || !degreeFile) {
+          toast({
+            title: "Missing Information",
+            description: "Please complete all fields including medical specialty, license number, and degree upload.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+        
+        // Register as doctor with additional info
+        user = await registerDoctor(formData, {
+          specialty: formData.specialty || "",
+          licenseNumber: formData.licenseNumber || "",
+          degreeFile: degreeFile
+        });
+        
+        toast({
+          title: "Registration Successful",
+          description: "Your account has been created. Your medical credentials will be verified by our team before you can fully access the platform.",
+          variant: "default",
+        });
+        
+      } else {
+        // Register as regular patient
+        user = await registerUser(formData);
+        
+        toast({
+          title: "Registration Successful",
+          description: "Your account has been created. Welcome to LifeSage Health!",
+          variant: "default",
+        });
       }
-      
-      toast({
-        title: "Registration Successful",
-        description: successMessage,
-        variant: "default",
-      });
 
       // Redirect based on user role
       if (user.role === "doctor") {
@@ -106,6 +112,7 @@ const Register = () => {
       } else {
         navigate("/patient/dashboard");
       }
+      
     } catch (error: any) {
       toast({
         title: "Registration Failed",
@@ -242,6 +249,7 @@ const Register = () => {
                 placeholder="e.g., Cardiology, General Practice"
                 value={formData.specialty || ""}
                 onChange={handleChange}
+                required={formData.role === "doctor"}
               />
             </div>
             
@@ -253,6 +261,7 @@ const Register = () => {
                 placeholder="License ID"
                 value={formData.licenseNumber || ""}
                 onChange={handleChange}
+                required={formData.role === "doctor"}
               />
             </div>
             
@@ -294,6 +303,7 @@ const Register = () => {
                       accept=".pdf,.png,.jpg,.jpeg"
                       ref={fileInputRef}
                       onChange={handleFileChange}
+                      required={formData.role === "doctor"}
                     />
                   </label>
                 </div>

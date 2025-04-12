@@ -1,100 +1,100 @@
 
-import { GridFSBucket, MongoClient, ObjectId } from 'mongodb';
-import { mongoClient } from '@/lib/mongodb';
-import { Readable } from 'stream';
+import { MockStorage, delay } from "@/lib/mockDB";
 
-const DB_NAME = 'healthcare_app';
-const BUCKET_NAME = 'doctor_verification';
+// Mock file storage interface
+interface StoredFile {
+  id: string;
+  userId: string;
+  filename: string;
+  contentType: string;
+  fileData: string; // base64 encoded data
+  uploadDate: string;
+}
 
-// Helper to get gridfs bucket
-const getBucket = (client: MongoClient): GridFSBucket => {
-  const db = client.db(DB_NAME);
-  return new GridFSBucket(db, {
-    bucketName: BUCKET_NAME
+// Initialize mock file storage
+const fileStorage = new MockStorage<StoredFile>("files");
+
+// Convert File to Base64
+const fileToBase64 = async (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = error => reject(error);
   });
-};
-
-// Convert File to Buffer
-const fileToBuffer = async (file: File): Promise<Buffer> => {
-  const arrayBuffer = await file.arrayBuffer();
-  return Buffer.from(arrayBuffer);
 };
 
 // Upload degree document
 export const uploadDegreeDocument = async (file: File, userId: string): Promise<string | null> => {
   try {
-    // Create a unique file path for the degree document
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `${userId}_degree_${Date.now()}.${fileExtension}`;
+    // Simulate network delay
+    await delay(1000);
     
-    // Get buffer from file
-    const buffer = await fileToBuffer(file);
-    const readable = new Readable();
-    readable.push(buffer);
-    readable.push(null); // EOF
+    // Create a unique file ID
+    const fileId = `file_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     
-    // Get GridFS bucket
-    const bucket = getBucket(mongoClient);
+    // Convert file to base64
+    const base64Data = await fileToBase64(file);
     
-    // Upload file to GridFS
-    const uploadStream = bucket.openUploadStream(fileName, {
-      metadata: {
-        userId,
-        contentType: file.type,
-        uploadDate: new Date()
-      }
-    });
+    // Store file metadata and data
+    const storedFile: StoredFile = {
+      id: fileId,
+      userId,
+      filename: file.name,
+      contentType: file.type,
+      fileData: base64Data,
+      uploadDate: new Date().toISOString()
+    };
     
-    // Create a promise to handle upload
-    return new Promise((resolve, reject) => {
-      readable.pipe(uploadStream)
-        .on('error', (error) => {
-          console.error('Error uploading to GridFS:', error);
-          reject(error);
-        })
-        .on('finish', () => {
-          const fileId = uploadStream.id.toString();
-          resolve(fileId);
-        });
-    });
+    // Add to mock storage
+    fileStorage.add(storedFile);
+    
+    console.log(`Mock file upload successful: ${file.name}`);
+    return fileId;
   } catch (error) {
     console.error('File upload error:', error);
     return null;
   }
 };
 
-// Get file URL for a file stored in GridFS
+// Get file URL for a file stored in mock storage
 export const getFileUrl = async (fileId: string): Promise<string | null> => {
   try {
-    // In a real implementation, you'd create a route to serve the file
-    // Here we're returning a mock URL, as we'd need a server endpoint to serve files
-    const mockUrl = `/api/files/${fileId}`;
-    return mockUrl;
+    // Simulate network delay
+    await delay(500);
+    
+    // Get file from mock storage
+    const file = fileStorage.getById(fileId);
+    
+    if (!file) {
+      throw new Error('File not found');
+    }
+    
+    // In a real app, this would be a URL to the file on your server
+    // Here we just return the base64 data directly
+    return file.fileData;
   } catch (error) {
     console.error('Error getting file URL:', error);
     return null;
   }
 };
 
-// Download file from GridFS
-export const downloadFile = async (fileId: string): Promise<Buffer> => {
-  return new Promise((resolve, reject) => {
-    const bucket = getBucket(mongoClient);
-    const downloadStream = bucket.openDownloadStream(new ObjectId(fileId));
+// Download file from mock storage
+export const downloadFile = async (fileId: string): Promise<string | null> => {
+  try {
+    // Simulate network delay
+    await delay(800);
     
-    const chunks: Buffer[] = [];
+    // Get file from mock storage
+    const file = fileStorage.getById(fileId);
     
-    downloadStream
-      .on('data', (chunk) => {
-        chunks.push(chunk);
-      })
-      .on('error', (error) => {
-        console.error('Error downloading file:', error);
-        reject(error);
-      })
-      .on('end', () => {
-        const buffer = Buffer.concat(chunks);
-        resolve(buffer);
-      });
-  });
+    if (!file) {
+      throw new Error('File not found');
+    }
+    
+    return file.fileData;
+  } catch (error) {
+    console.error('Error downloading file:', error);
+    return null;
+  }
 };
