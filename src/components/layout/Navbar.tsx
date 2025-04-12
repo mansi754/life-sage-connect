@@ -29,6 +29,9 @@ const Navbar = () => {
             <a href="/" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
               Services
             </a>
+            <Link to="/demo" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
+              Demo
+            </Link>
             <Link to="/login" className="text-health-neutral-600 hover:text-health-blue-500 transition-colors">
               Login
             </Link>
@@ -76,6 +79,13 @@ const Navbar = () => {
             >
               Services
             </a>
+            <Link 
+              to="/demo" 
+              className="block py-2 text-health-neutral-600 hover:text-health-blue-500 transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              Demo
+            </Link>
             <Link 
               to="/login" 
               className="block py-2 text-health-neutral-600 hover:text-health-blue-500 transition-colors"

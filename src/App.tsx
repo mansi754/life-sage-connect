@@ -14,6 +14,7 @@ import VideoConsultationPage from "./pages/VideoConsultationPage";
 import MentalHealthChatPage from "./pages/MentalHealthChatPage";
 import AboutPage from "./pages/AboutPage";
 import NotFound from "./pages/NotFound";
+import DemoComponentsPage from "./pages/DemoComponentsPage";
 
 // Patient Tab Pages
 import SymptomCheckerPage from "./pages/patient/SymptomCheckerPage";
@@ -57,6 +58,9 @@ const App = () => (
           <Route path="/doctor/schedule" element={<SchedulePage />} />
           <Route path="/doctor/alerts" element={<AlertsPage />} />
           <Route path="/doctor/verification" element={<VerificationPage />} />
+          
+          {/* Demo Components Page */}
+          <Route path="/demo" element={<DemoComponentsPage />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
