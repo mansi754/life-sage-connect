@@ -1,10 +1,10 @@
 
 import { useState, useRef, useEffect } from "react";
-import { getPatientAssistance } from "@/services/openaiService";
+import { getPatientAssistance, initializeOpenAI, getOpenAIClient } from "@/services/openaiService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { MessageCircle, Send, User, Bot, Loader2, Shield } from "lucide-react";
+import { MessageCircle, Send, User, Bot, Loader2, Shield, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -26,8 +26,8 @@ const AIPatientAssistant = () => {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [apiKey, setApiKey] = useState("");
-  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem("openai-api-key") || "");
+  const [showApiKeyInput, setShowApiKeyInput] = useState(!localStorage.getItem("openai-api-key"));
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -35,12 +35,27 @@ const AIPatientAssistant = () => {
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    // Check if API key exists in localStorage on component mount
+    const storedApiKey = localStorage.getItem("openai-api-key");
+    if (storedApiKey) {
+      setApiKey(storedApiKey);
+      initializeOpenAI(storedApiKey);
+    }
+  }, []);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleSendMessage = async () => {
     if (!input.trim()) return;
+    
+    // Check if OpenAI client is initialized
+    if (!getOpenAIClient()) {
+      setShowApiKeyInput(true);
+      return;
+    }
     
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -87,6 +102,14 @@ const AIPatientAssistant = () => {
     }
   };
 
+  const handleSaveApiKey = () => {
+    if (apiKey.trim()) {
+      localStorage.setItem("openai-api-key", apiKey);
+      initializeOpenAI(apiKey);
+      setShowApiKeyInput(false);
+    }
+  };
+
   return (
     <Card className="w-full h-[600px] flex flex-col">
       <CardHeader>
@@ -108,37 +131,55 @@ const AIPatientAssistant = () => {
         </Alert>
 
         {showApiKeyInput ? (
-          <div className="space-y-2 mb-4">
-            <label htmlFor="patient-api-key" className="text-sm font-medium">
-              Enter your OpenAI API Key
-            </label>
-            <input
-              id="patient-api-key"
-              type="password"
-              className="w-full p-2 border rounded"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="sk-..."
-            />
-            <Button 
-              onClick={() => {
-                localStorage.setItem("openai-api-key", apiKey);
-                setShowApiKeyInput(false);
-              }}
-              size="sm"
-            >
-              Save Key
-            </Button>
+          <div className="space-y-2 mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+            <div className="flex items-start mb-2">
+              <AlertTriangle className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />
+              <div>
+                <h3 className="font-medium text-blue-700">API Key Required</h3>
+                <p className="text-sm text-blue-600">
+                  This feature requires an OpenAI API key to function. Your key is stored locally in your browser only.
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="patient-api-key" className="text-sm font-medium">
+                Enter your OpenAI API Key
+              </label>
+              <input
+                id="patient-api-key"
+                type="password"
+                className="w-full p-2 border rounded"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="sk-..."
+              />
+              <Button 
+                onClick={handleSaveApiKey}
+                size="sm"
+                className="w-full"
+                disabled={!apiKey.trim()}
+              >
+                Save & Continue
+              </Button>
+            </div>
           </div>
         ) : (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setShowApiKeyInput(true)}
-            className="text-xs mb-4"
-          >
-            Configure API Key
-          </Button>
+          <div className="mb-4 flex justify-between items-center">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowApiKeyInput(true)}
+              className="text-xs"
+            >
+              Change API Key
+            </Button>
+            {apiKey && (
+              <div className="text-xs text-green-600 flex items-center">
+                <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+                API Connected
+              </div>
+            )}
+          </div>
         )}
 
         <ScrollArea className="h-[350px] pr-4">
@@ -184,11 +225,11 @@ const AIPatientAssistant = () => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          disabled={loading}
+          disabled={loading || showApiKeyInput}
         />
         <Button 
           onClick={handleSendMessage} 
-          disabled={loading || !input.trim()}
+          disabled={loading || !input.trim() || showApiKeyInput}
           size="icon"
         >
           {loading ? (

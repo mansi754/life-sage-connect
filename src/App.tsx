@@ -21,12 +21,26 @@ import SymptomCheckerPage from "./pages/patient/SymptomCheckerPage";
 import MedicationsPage from "./pages/patient/MedicationsPage";
 import HealthRecordsPage from "./pages/patient/HealthRecordsPage";
 import InsurancePage from "./pages/patient/InsurancePage";
+import AppointmentsPage from "./pages/patient/AppointmentsPage";
 
 // Doctor Tab Pages
 import PatientsPage from "./pages/doctor/PatientsPage";
 import SchedulePage from "./pages/doctor/SchedulePage";
 import AlertsPage from "./pages/doctor/AlertsPage";
 import VerificationPage from "./pages/doctor/VerificationPage";
+
+// Initialize OpenAI API key from localStorage if it exists
+const initializeAPIKey = () => {
+  const apiKey = localStorage.getItem("openai-api-key");
+  if (apiKey) {
+    import("./services/openaiService").then(module => {
+      module.initializeOpenAI(apiKey);
+    });
+  }
+};
+
+// Run initialization
+initializeAPIKey();
 
 const queryClient = new QueryClient();
 
@@ -52,6 +66,7 @@ const App = () => (
           <Route path="/patient/medications" element={<MedicationsPage />} />
           <Route path="/patient/records" element={<HealthRecordsPage />} />
           <Route path="/patient/insurance" element={<InsurancePage />} />
+          <Route path="/patient/appointments" element={<AppointmentsPage />} />
           
           {/* Doctor Tab Pages */}
           <Route path="/doctor/patients" element={<PatientsPage />} />
