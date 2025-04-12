@@ -1,18 +1,15 @@
 
 import OpenAI from 'openai';
 
-// API key is now hardcoded for demo purposes
-// In a production environment, this would use environment variables or backend services
-let openaiApiKey = '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';
+// In a real application, this would be stored in environment variables or Supabase secrets
+// For demo purposes only - in production, NEVER expose API keys in frontend code
+let openaiApiKey = '';
 
 // Initialize the OpenAI client
 let openai: OpenAI | null = null;
 
-export const initializeOpenAI = (apiKey?: string) => {
-  // Use the provided key or the default one
-  if (apiKey) {
-    openaiApiKey = apiKey;
-  }
+export const initializeOpenAI = (apiKey: string) => {
+  openaiApiKey = apiKey;
   openai = new OpenAI({
     apiKey: openaiApiKey,
     dangerouslyAllowBrowser: true // Only for demo purposes
@@ -21,8 +18,8 @@ export const initializeOpenAI = (apiKey?: string) => {
 };
 
 export const getOpenAIClient = () => {
-  if (!openai) {
-    openai = initializeOpenAI();
+  if (!openai && openaiApiKey) {
+    openai = initializeOpenAI(openaiApiKey);
   }
   return openai;
 };

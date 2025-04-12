@@ -1,6 +1,6 @@
 
 import { useState, useRef, useEffect } from "react";
-import { getDoctorAssistance, initializeOpenAI } from "@/services/openaiService";
+import { getDoctorAssistance } from "@/services/openaiService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,11 +34,6 @@ const AIDocAssistant = () => {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    // Initialize OpenAI on component mount
-    initializeOpenAI();
-  }, []);
-  
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -117,12 +112,41 @@ Chief Complaint: Fatigue, blurred vision, and occasional dizziness for past 2 we
         </CardDescription>
       </CardHeader>
       <CardContent className="p-0 h-[calc(100%-9rem)]">
-        {/* API key is now pre-configured */}
-        <div className="p-4">
-          <div className="p-2 text-xs text-health-neutral-600 bg-health-neutral-50 rounded">
-            OpenAI API key is configured
+        {showApiKeyInput ? (
+          <div className="space-y-2 p-4">
+            <label htmlFor="doc-api-key" className="text-sm font-medium">
+              Enter your OpenAI API Key
+            </label>
+            <input
+              id="doc-api-key"
+              type="password"
+              className="w-full p-2 border rounded"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="sk-..."
+            />
+            <Button 
+              onClick={() => {
+                localStorage.setItem("openai-api-key", apiKey);
+                setShowApiKeyInput(false);
+              }}
+              size="sm"
+            >
+              Save Key
+            </Button>
           </div>
-        </div>
+        ) : (
+          <div className="p-4">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowApiKeyInput(true)}
+              className="text-xs"
+            >
+              Configure API Key
+            </Button>
+          </div>
+        )}
 
         <div className="flex h-[calc(100%-4rem)]">
           {showPatientPanel && (

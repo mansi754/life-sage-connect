@@ -1,235 +1,212 @@
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { useNavigate, Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useAuth } from "@/context/AuthContext";
-
-type RegisterFormValues = {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  role: "patient" | "doctor";
-};
+import { useToast } from "@/hooks/use-toast";
+import { Eye, EyeOff, UserPlus } from "lucide-react";
+import { RegisterUser, UserRole } from "@/types/user";
+import { registerUser } from "@/services/authService";
 
 const Register = () => {
-  const navigate = useNavigate();
-  const { signUp } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    watch,
-  } = useForm<RegisterFormValues>({
-    defaultValues: {
-      role: "patient",
-    },
+  const [formData, setFormData] = useState<RegisterUser>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    role: "patient",
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const password = watch("password");
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
-  const onSubmit = async (data: RegisterFormValues) => {
-    setIsLoading(true);
-    setErrorMessage(null);
-    setSuccessMessage(null);
+  const handleRoleChange = (value: UserRole) => {
+    setFormData((prev) => ({ ...prev, role: value }));
+  };
 
-    if (data.password !== data.confirmPassword) {
-      setErrorMessage("Passwords do not match");
-      setIsLoading(false);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Passwords do not match",
+        description: "Please make sure your passwords match.",
+        variant: "destructive",
+      });
+      setLoading(false);
       return;
     }
 
     try {
-      const { error } = await signUp(data.email, data.password, {
-        firstName: data.firstName,
-        lastName: data.lastName,
-        role: data.role,
+      const user = await registerUser(formData);
+      
+      toast({
+        title: "Registration Successful",
+        description: "Your account has been created. Welcome to LifeSage Health!",
+        variant: "default",
       });
 
-      if (error) {
-        setErrorMessage(error.message || "Failed to create account");
-        return;
+      // Redirect based on user role
+      if (user.role === "doctor") {
+        navigate("/doctor/dashboard");
+      } else {
+        navigate("/patient/dashboard");
       }
-
-      setSuccessMessage(
-        "Registration successful! Please check your email to confirm your account."
-      );
-      
-      // Redirect to login after a short delay
-      setTimeout(() => {
-        navigate("/login");
-      }, 3000);
-    } catch (error: any) {
-      setErrorMessage(error.message || "An unexpected error occurred");
+    } catch (error) {
+      toast({
+        title: "Registration Failed",
+        description: "There was an error creating your account. Please try again.",
+        variant: "destructive",
+      });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[80vh] py-8">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center">Create Account</CardTitle>
-          <CardDescription className="text-center">
-            Join LifeSage Health to manage your healthcare journey
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            {errorMessage && (
-              <Alert className="mb-4 bg-red-50 text-red-700 border-red-200">
-                <AlertDescription>{errorMessage}</AlertDescription>
-              </Alert>
-            )}
-            
-            {successMessage && (
-              <Alert className="mb-4 bg-green-50 text-green-700 border-green-200">
-                <AlertDescription>{successMessage}</AlertDescription>
-              </Alert>
-            )}
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input
-                    id="firstName"
-                    placeholder="John"
-                    {...register("firstName", {
-                      required: "First name is required",
-                    })}
-                  />
-                  {errors.firstName && (
-                    <p className="text-sm text-red-500">{errors.firstName.message}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input
-                    id="lastName"
-                    placeholder="Doe"
-                    {...register("lastName", {
-                      required: "Last name is required",
-                    })}
-                  />
-                  {errors.lastName && (
-                    <p className="text-sm text-red-500">{errors.lastName.message}</p>
-                  )}
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  {...register("email", {
-                    required: "Email is required",
-                    pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: "Invalid email address",
-                    },
-                  })}
-                />
-                {errors.email && (
-                  <p className="text-sm text-red-500">{errors.email.message}</p>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  {...register("password", {
-                    required: "Password is required",
-                    minLength: {
-                      value: 6,
-                      message: "Password must be at least 6 characters",
-                    },
-                  })}
-                />
-                {errors.password && (
-                  <p className="text-sm text-red-500">{errors.password.message}</p>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  {...register("confirmPassword", {
-                    required: "Please confirm your password",
-                    validate: (value) =>
-                      value === password || "Passwords do not match",
-                  })}
-                />
-                {errors.confirmPassword && (
-                  <p className="text-sm text-red-500">
-                    {errors.confirmPassword.message}
-                  </p>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Account Type</Label>
-                <RadioGroup
-                  defaultValue="patient"
-                  className="flex space-x-4"
-                  {...register("role", { required: true })}
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="patient" id="patient" />
-                    <Label htmlFor="patient" className="cursor-pointer">Patient</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="doctor" id="doctor" />
-                    <Label htmlFor="doctor" className="cursor-pointer">Doctor</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-              
-              <Button
-                type="submit"
-                className="w-full bg-health-blue-600 hover:bg-health-blue-700"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <div className="flex items-center justify-center">
-                    <div className="h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Creating account...
-                  </div>
-                ) : (
-                  "Create Account"
-                )}
-              </Button>
+    <div className="max-w-md w-full mx-auto p-8 bg-white rounded-lg shadow-sm border border-health-neutral-200">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold text-health-neutral-900">Create an Account</h2>
+        <p className="text-health-neutral-600 mt-2">Join LifeSage Health and get access to quality healthcare</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="firstName">First Name</Label>
+            <Input
+              id="firstName"
+              name="firstName"
+              placeholder="John"
+              required
+              value={formData.firstName}
+              onChange={handleChange}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="lastName">Last Name</Label>
+            <Input
+              id="lastName"
+              name="lastName"
+              placeholder="Doe"
+              required
+              value={formData.lastName}
+              onChange={handleChange}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="you@example.com"
+            required
+            value={formData.email}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <div className="relative">
+            <Input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••"
+              required
+              value={formData.password}
+              onChange={handleChange}
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-health-neutral-500"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="confirmPassword">Confirm Password</Label>
+          <div className="relative">
+            <Input
+              id="confirmPassword"
+              name="confirmPassword"
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••"
+              required
+              value={formData.confirmPassword}
+              onChange={handleChange}
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-health-neutral-500"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>I am a</Label>
+          <RadioGroup 
+            defaultValue="patient" 
+            value={formData.role}
+            onValueChange={handleRoleChange as (value: string) => void}
+            className="flex space-x-4"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="patient" id="patient" />
+              <Label htmlFor="patient" className="cursor-pointer">Patient</Label>
             </div>
-          </form>
-        </CardContent>
-        <CardFooter>
-          <p className="text-center w-full text-sm text-gray-600">
-            Already have an account?{" "}
-            <Link to="/login" className="text-health-blue-600 hover:underline">
-              Sign in
-            </Link>
-          </p>
-        </CardFooter>
-      </Card>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="doctor" id="doctor" />
+              <Label htmlFor="doctor" className="cursor-pointer">Healthcare Provider</Label>
+            </div>
+          </RadioGroup>
+        </div>
+
+        <Button type="submit" className="w-full btn-primary" disabled={loading}>
+          {loading ? (
+            <span className="flex items-center">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Creating Account...
+            </span>
+          ) : (
+            <span className="flex items-center">
+              <UserPlus className="mr-2 h-4 w-4" /> Create Account
+            </span>
+          )}
+        </Button>
+      </form>
+
+      <div className="mt-6 text-center">
+        <p className="text-health-neutral-600">
+          Already have an account?{" "}
+          <Link to="/login" className="text-health-blue-500 hover:text-health-blue-700 font-medium">
+            Sign in
+          </Link>
+        </p>
+      </div>
     </div>
   );
 };
